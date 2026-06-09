@@ -1,4 +1,4 @@
-# EV Trip Planner 🔋🗺️
+# EV Trip Planner (BETA) 🔋🗺️
 
 Pianificatore di viaggi per **auto elettriche**: trova il percorso **migliore ed economico** in
 Europa, consiglia le **soste di ricarica** in base all'autonomia reale del tuo veicolo, mostra
