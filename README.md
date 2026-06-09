@@ -1,71 +1,170 @@
-# EV Trip Planner (BETA) 🔋🗺️
+# 🔋 EV Trip Planner (BETA)
 
-Pianificatore di viaggi per **auto elettriche**: trova il percorso **migliore ed economico** in
-Europa, consiglia le **soste di ricarica** in base all'autonomia reale del tuo veicolo, mostra
-**POI** (cibo, aree di servizio) lungo la strada e stima **pedaggi e autostrade**.
+Pianificatore di viaggi per **auto elettriche** in Europa: trova il percorso **migliore ed
+economico**, calcola le **soste di ricarica** in base all'autonomia reale del tuo veicolo, stima
+**pedaggi e vignette**, mostra i **POI** lungo la strada e ti dà un **PDF** del viaggio.
 
 Costruito interamente su **dati e API aperti/gratuiti** (OpenStreetMap, OpenRouteService/OSRM,
-Open Charge Map, Overpass). Nessun dato Apple/Google.
+Open Charge Map, Overpass). Nessun dato Apple/Google, nessuna chiave obbligatoria per partire.
 
-## Stack
-- **Frontend**: React + Vite + MapLibre GL JS (tile gratuite OpenFreeMap, nessuna chiave) + Zustand + Tailwind
-- **Backend**: Node.js + Fastify (gateway con cache e rate-limit) + Prisma + SQLite
-- **Dati**: Nominatim (geocoding), OpenRouteService o OSRM (routing), Open Charge Map (colonnine),
-  Overpass (POI), stima pedaggi interna per Paese (+ TollGuru opzionale)
+> Stack: **React + Vite + MapLibre GL** (frontend) · **Node.js + Fastify + Prisma/SQLite** (backend)
 
-## Avvio rapido
-```bash
-# 1. Configura le chiavi (gratuite)
-cp backend/.env.example backend/.env
-#    -> OCM_API_KEY: NECESSARIA per le colonnine (senza, OpenChargeMap risponde 403)
-#    -> ORS_API_KEY: consigliata per "evita pedaggi/autostrade" ed elevazione (altrimenti usa OSRM)
-#    -> APP_USER_AGENT: token semplice tipo "NomeApp/0.1" (Nominatim blocca UA con parentesi/email)
+---
 
-# 2. Installa, prepara il DB e avvia
-npm install
-npm --workspace backend run db:setup   # genera client, migra, seed veicoli
-npm run dev                            # backend :5174 + frontend :5173
-```
-Apri http://localhost:5173
+## ✨ Caratteristiche
 
-## Funzioni
-- Inserimento veicolo EV (batteria, consumo, connettori) + libreria pre-caricata (28 modelli)
-- **Editor della curva di ricarica** punto-per-punto (SoC % → kW) con grafico live
-- Percorso su mappa con varianti **più veloce / più economico / meno soste**
-- Ottimizzazione soste di ricarica realistica (curva di potenza, SoC di riserva, costo energia)
-- **Prezzi per operatore** (CPO europei: Ionity, Tesla, Enel X Way, Fastned, Free To X…) usati
-  nel calcolo del costo e nella scelta dell'opzione economica
+**Pianificazione**
+- Percorso su mappa con **3 opzioni**: *più veloce* · *più economico* · *meno soste*
+- **Ottimizzatore di ricarica realistico**: curve di ricarica per veicolo, SoC di riserva,
+  consumo che cresce con la velocità autostradale (no soste “fantasma”, no ricariche da 4%)
+- **Tappe e soste** di tre tipi, con **riordino drag & drop**:
+  - 📍 *Passaggio* — luogo da attraversare
+  - ⚡ *Ricarica* — fermata obbligatoria con **% di carica target** scelta da te
+  - ☕ *Riposo/pranzo* — pausa con durata, sommata al tempo totale
 - Toggle **evita pedaggi** / **evita autostrade**
-- Stima costo totale = energia + pedaggi (+ vignette)
-- POI filtrabili lungo il corridoio del percorso
-- **Account utente** (registrazione/login con cookie di sessione): veicoli custom e viaggi salvati
-  sono privati per ogni utente; in modalità ospite restano locali
 
-## API principali
-- `POST /api/auth/register|login|logout`, `GET /api/auth/me` — account e sessione (cookie httpOnly)
+**Colonnine**
+- Dati colonnine da **OpenStreetMap** (senza chiave) o **Open Charge Map** (con `OCM_API_KEY`)
+- **Filtro per rete/operatore** (es. solo Tesla, o un sottoinsieme)
+- Potenza minima configurabile; se mancano colonnine rapide, **include automaticamente** quelle più lente
+- **Prezzi per operatore** (Ionity, Tesla, Enel X Way, Fastned, …) usati nel calcolo del costo
+- **App da installare** consigliate in base agli operatori delle soste
+
+**Costi**
+- Energia (ricariche pubbliche + quota domestica) + **pedaggi** + **vignette**
+- **Vignette europee** con prezzi ufficiali, validità, link d'acquisto ed **esenzioni per EV**
+  (es. Cechia esente); scelta automatica del taglio in base alla durata del viaggio
+- Pedaggi a barriera: stima per Paese, oppure **esatti via TollGuru** (con `TOLLGURU_API_KEY`)
+
+**Veicoli**
+- **60+ modelli** pre-caricati con **curve di ricarica reali** + editor (batteria, consumo,
+  connettori, **editor curva punto-per-punto** con grafico)
+
+**Interfaccia**
+- **Grafico Stato di carica** a denti di sega, interattivo (tooltip al mouse) e ingrandibile
+- **Account utente** (registrazione/login) con veicoli e viaggi salvati privati
+- **Esportazione PDF** del viaggio (riepilogo, mappa, grafico, soste, vignette, app)
+- **Impostazioni unità**: distanza km/mi, temperatura °C/°F, consumo Wh/km · mi/kWh
+
+---
+
+## 🚀 Avvio rapido
+
+Requisiti: **Node.js ≥ 20**.
+
+```bash
+git clone https://github.com/tommasobelfiori-SRDN/ev-trip-planner.git
+cd ev-trip-planner
+
+# 1) Configura le chiavi (tutte opzionali: l'app parte anche senza)
+cp backend/.env.example backend/.env
+
+# 2) Installa, prepara il DB (genera client + schema + seed veicoli)
+npm install
+npm --workspace backend run db:setup
+
+# 3) Avvia backend (:5174) + frontend (:5173)
+npm run dev
+```
+
+Apri **http://localhost:5173**, inserisci partenza/arrivo, scegli il veicolo e premi
+**Pianifica viaggio**.
+
+---
+
+## 🔑 Configurazione (`backend/.env`)
+
+Tutte le chiavi sono **opzionali**; l'app funziona anche senza, con funzioni ridotte.
+
+| Variabile | A cosa serve | Senza |
+|---|---|---|
+| `OCM_API_KEY` | Colonnine da Open Charge Map | usa **OpenStreetMap** (nessuna chiave) |
+| `ORS_API_KEY` | *Evita pedaggi/autostrade* + elevazione | usa **OSRM** (senza quei filtri) |
+| `TOLLGURU_API_KEY` | Pedaggi a barriera **esatti** | usa la **stima** interna per Paese |
+| `APP_USER_AGENT` | User-Agent per Nominatim/Overpass | default `EVTripPlanner/0.1` |
+
+> ⚠️ Nominatim blocca gli User-Agent con parentesi o email: usa un token semplice tipo `NomeApp/0.1`.
+
+---
+
+## 🗺️ Dati & API (tutti aperti)
+
+| Funzione | Servizio | Chiave |
+|---|---|---|
+| Geocoding | Nominatim (OSM) | no |
+| Routing | OpenRouteService **o** OSRM | ORS opzionale |
+| Colonnine | OpenStreetMap (Overpass) **o** Open Charge Map | OCM opzionale |
+| POI (cibo, aree servizio) | Overpass (OSM) | no |
+| Pedaggi a barriera | stima per Paese **o** TollGuru | TollGuru opzionale |
+| Vignette | prezzi ufficiali pubblicati | no |
+| Tile mappa | MapLibre + OSM raster | no |
+
+I dati sono memorizzati in cache su SQLite per rispettare i rate-limit delle API gratuite.
+
+---
+
+## 🧱 Struttura del progetto
+
+```
+ev-trip-planner/
+├── backend/                 # Node.js + Fastify + Prisma (SQLite)
+│   ├── src/
+│   │   ├── server.js        # entrypoint + rotte
+│   │   ├── routes/          # geocode, vehicles, plan, pois, trips, auth
+│   │   ├── services/        # routing, charging, poi, toll, consumption,
+│   │   │                    #   pricing, planner (ottimizzatore), auth
+│   │   ├── lib/             # http (rate-limit+cache), geo, prisma, env, vehicle
+│   │   └── seed.js
+│   ├── db/                  # seed-vehicles.json, toll/vignette/app data
+│   ├── prisma/schema.prisma
+│   └── test/                # test unitari (node:test)
+└── frontend/                # React + Vite + MapLibre + Zustand + Tailwind
+    └── src/
+        ├── components/      # Map, PlanPanel, ResultsPanel, VehicleEditor,
+        │                    #   Auth, Settings, SavedTrips
+        ├── store.js         # stato globale (Zustand)
+        ├── units.js         # conversioni unità
+        └── exportPdf.js     # generazione PDF (jsPDF)
+```
+
+---
+
+## 🔌 API principali
+
+- `POST /api/plan` — pianifica il viaggio (opzioni, soste, costi, profilo SoC)
+- `POST /api/pois` — POI lungo il percorso (caricati a parte)
 - `GET/POST/PUT/DELETE /api/vehicles[/:id]` — veicoli (PUT aggiorna anche la curva di ricarica)
-- `POST /api/plan` — pianificazione con opzioni, soste, costi, POI
 - `GET/POST/DELETE /api/trips[/:id]` — viaggi salvati (per utente)
-- `GET /api/prices` — listino tariffe per operatore
+- `POST /api/auth/register|login|logout`, `GET /api/auth/me` — account (cookie di sessione)
+- `GET /api/geocode?q=` · `GET /api/prices` · `GET /api/health`
 
-## Pedaggi e vignette
-- **Vignette** (Austria, Svizzera, Slovenia, Ungheria, Cechia, Slovacchia, Romania, Bulgaria):
-  prezzi **ufficiali esatti** con tutti i tagli di validità, link d'acquisto e gestione delle
-  **esenzioni per auto elettriche** (es. in Cechia le BEV sono esenti). Avviso esplicito di cosa
-  comprare prima di partire.
-- **Pedaggi a barriera** (Italia, Francia, Spagna, Portogallo, Grecia, Croazia): **reali** se imposti
-  `TOLLGURU_API_KEY` (free tier), altrimenti **stima** su tariffa media per km (etichettata come tale).
+---
 
-## Reti di ricarica e app
-- **Filtro reti**: puoi limitare le soste a operatori specifici (es. solo Tesla Supercharger, o un
-  insieme di compagnie) dal pannello "Reti di ricarica".
-- **App consigliate**: dopo la pianificazione l'app elenca le **app da installare** in base agli
-  operatori delle soste del tuo viaggio, più le app di roaming/pianificazione utili in ogni viaggio.
+## 🧪 Test
 
-## Limiti
-- **Colonnine**: di default da **OpenStreetMap** (nessuna chiave). Imposta `OCM_API_KEY` per usare
-  Open Charge Map (dati più ricchi). Il tagging OSM di connettori/potenza è a volte parziale: i valori
-  mancanti vengono inferiti (DC→50 kW, AC→22 kW).
-- **Mappa**: usa tile raster OpenStreetMap (nessuna chiave). In rete instabile alcuni tile possono
-  tardare, ma percorso e marker si disegnano comunque.
-- Le API gratuite hanno rate-limit (Nominatim 1 req/s, ORS 2000 req/giorno), mitigati con cache su SQLite.
+```bash
+npm --workspace backend test
+```
+
+Coprono consumo (curve, velocità, tempi di ricarica), pedaggi/vignette (per-km, esenzioni EV) e la
+**percorribilità dell'ottimizzatore** (soste obbligatorie, riserva, casi limite).
+
+---
+
+## ⚠️ Limiti noti
+
+- I **pedaggi a barriera** sono una **stima** (default gratuito); per valori esatti usa `TOLLGURU_API_KEY`.
+- Le **colonnine OSM** hanno tagging variabile: la potenza viene **inferita** quando manca.
+- Le API gratuite hanno **rate-limit** (Nominatim 1 req/s, ORS 2000/giorno): mitigati con cache.
+- L'ottimizzatore è realistico ma semplificato (non modella code o disponibilità in tempo reale).
+
+---
+
+## 🙏 Crediti
+
+Dati: **© OpenStreetMap contributors** · **Open Charge Map** · **OpenRouteService** · OSRM · Overpass.
+Mappa renderizzata con **MapLibre GL**. Generazione PDF con **jsPDF**.
+
+---
+
+🤖 Sviluppato con [Claude Code](https://claude.com/claude-code).
