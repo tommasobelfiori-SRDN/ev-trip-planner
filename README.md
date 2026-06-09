@@ -160,6 +160,14 @@ Coprono consumo (curve, velocità, tempi di ricarica), pedaggi/vignette (per-km,
 
 ---
 
+## 📜 Licenza
+
+Distribuito con licenza **MIT** — vedi [`LICENSE`](LICENSE). In breve: puoi usare, modificare e
+ridistribuire liberamente, mantenendo l'avviso di copyright; il software è fornito "così com'è",
+senza garanzie.
+
+I **dati** restano dei rispettivi titolari (vedi crediti): la licenza MIT copre il codice, non i dati.
+
 ## 🙏 Crediti
 
 Dati: **© OpenStreetMap contributors** · **Open Charge Map** · **OpenRouteService** · OSRM · Overpass.

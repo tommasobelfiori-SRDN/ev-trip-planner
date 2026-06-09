@@ -2,6 +2,7 @@
   "name": "ev-trip-planner",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Pianificatore di viaggi per auto elettriche: percorso migliore ed economico, con colonnine, POI e pedaggi (Europa, API aperte).",
   "workspaces": [
     "backend",
