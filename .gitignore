@@ -1,0 +1,24 @@
+# Dipendenze e build
+node_modules/
+dist/
+*.log
+
+# Variabili d'ambiente (chiavi API)
+.env
+backend/.env
+
+# Database SQLite (generato localmente)
+*.sqlite
+*.sqlite-journal
+*.sqlite3
+backend/db/
+backend/prisma/db/
+backend/prisma/migrations/dev.db*
+
+# Config locale editor/tooling
+.claude/
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store

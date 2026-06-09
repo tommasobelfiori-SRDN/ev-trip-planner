@@ -1,0 +1,223 @@
+{
+  "vignettes": [
+    {
+      "code": "AT",
+      "name": "Austria",
+      "prices": [
+        {
+          "period": "1 giorno",
+          "eur": 9.3
+        },
+        {
+          "period": "10 giorni",
+          "eur": 9.9
+        },
+        {
+          "period": "2 mesi",
+          "eur": 29
+        },
+        {
+          "period": "1 anno",
+          "eur": 103.8
+        }
+      ],
+      "purchaseUrl": "https://shop.asfinag.at/en/",
+      "electricNote": "Nessuna esenzione: le auto elettriche pagano la vignette come le auto a combustione. La digitale e' legata alla targa (sistema interamente elettronico dal 2023)."
+    },
+    {
+      "code": "CH",
+      "name": "Svizzera",
+      "prices": [
+        {
+          "period": "1 anno (unica disponibile)",
+          "eur": 42
+        }
+      ],
+      "purchaseUrl": "https://www.e-vignette.ch/",
+      "electricNote": "Vignette annuale unica a 40 CHF (~42 EUR), valida ~14 mesi (es. 2025: 1 dic 2024 - 31 gen 2026). Non esistono tagli giornalieri/mensili. Nessuno sconto per auto elettriche. E-vignette legata alla targa via Via Portal della UDSC/BAZG."
+    },
+    {
+      "code": "SI",
+      "name": "Slovenia",
+      "prices": [
+        {
+          "period": "7 giorni",
+          "eur": 16
+        },
+        {
+          "period": "1 mese",
+          "eur": 32
+        },
+        {
+          "period": "1 anno",
+          "eur": 117.5
+        }
+      ],
+      "purchaseUrl": "https://evinjeta.dars.si/en",
+      "electricNote": "Nessuna esenzione per le auto elettriche: stessi prezzi della classe 2A (auto <= 3,5 t, altezza fino a 1,3 m sull'asse anteriore). E-vinjeta legata alla targa, gestita da DARS."
+    },
+    {
+      "code": "HU",
+      "name": "Ungheria",
+      "prices": [
+        {
+          "period": "10 giorni (settimanale)",
+          "eur": 14
+        },
+        {
+          "period": "1 mese",
+          "eur": 18
+        },
+        {
+          "period": "1 anno",
+          "eur": 148
+        }
+      ],
+      "purchaseUrl": "https://ematrica.nemzetiutdij.hu/",
+      "electricNote": "Categoria D1 (auto <= 3,5 t, max 7 persone). Prezzi 2025 in HUF (10 giorni 5.590 HUF, mese 7.135 HUF, anno 59.210 HUF); valori EUR indicativi al cambio ~400 HUF/EUR. Nessuna esenzione specifica per le elettriche."
+    },
+    {
+      "code": "CZ",
+      "name": "Cechia (Repubblica Ceca)",
+      "prices": [
+        {
+          "period": "1 giorno",
+          "eur": 8.4
+        },
+        {
+          "period": "10 giorni",
+          "eur": 11.6
+        },
+        {
+          "period": "1 mese",
+          "eur": 18.4
+        },
+        {
+          "period": "1 anno",
+          "eur": 97.6
+        }
+      ],
+      "purchaseUrl": "https://www.edalnice.cz/en/",
+      "electricNote": "Auto 100% elettriche e a idrogeno (fuel cell) fino a 3,5 t ESENTI dalla vignette. Plug-in hybrid con <= 50 g CO2/km pagano 1/4 del prezzo; veicoli a gas naturale (CNG/LNG, non LPG) pagano meta'. Prezzi 2025 in CZK (10 giorni 290, mese 460, anno 2.440 CZK), EUR indicativo al cambio ~25 CZK/EUR."
+    },
+    {
+      "code": "SK",
+      "name": "Slovacchia",
+      "prices": [
+        {
+          "period": "1 giorno",
+          "eur": 8.1
+        },
+        {
+          "period": "10 giorni",
+          "eur": 10.8
+        },
+        {
+          "period": "1 mese",
+          "eur": 17.1
+        },
+        {
+          "period": "1 anno (365 giorni)",
+          "eur": 90
+        }
+      ],
+      "purchaseUrl": "https://eznamka.sk/en/",
+      "electricNote": "Nessuna esenzione generale per le auto elettriche (pagano la e-znamka come le altre). Vignette interamente digitale legata alla targa."
+    },
+    {
+      "code": "RO",
+      "name": "Romania",
+      "prices": [
+        {
+          "period": "1 giorno",
+          "eur": 3.5
+        },
+        {
+          "period": "10 giorni",
+          "eur": 6
+        },
+        {
+          "period": "30 giorni",
+          "eur": 9.5
+        },
+        {
+          "period": "60 giorni",
+          "eur": 15
+        },
+        {
+          "period": "12 mesi",
+          "eur": 50
+        }
+      ],
+      "purchaseUrl": "https://www.roviniete.ro/en",
+      "electricNote": "Prezzi della rovinieta aggiornati dal 1 settembre 2025 (auto - categoria A). Nessuna esenzione specifica per le elettriche. Gestita da CNAIR, legata alla targa."
+    },
+    {
+      "code": "BG",
+      "name": "Bulgaria",
+      "prices": [
+        {
+          "period": "Weekend (ven 12:00 - dom 23:59)",
+          "eur": 5.11
+        },
+        {
+          "period": "7 giorni (settimanale)",
+          "eur": 7.67
+        },
+        {
+          "period": "1 mese (30 giorni)",
+          "eur": 15.34
+        },
+        {
+          "period": "3 mesi (trimestrale)",
+          "eur": 27.61
+        },
+        {
+          "period": "1 anno",
+          "eur": 49.6
+        }
+      ],
+      "purchaseUrl": "https://www.bgtoll.bg/en/",
+      "electricNote": "Prezzi in vigore dal 1 maggio 2025 (veicoli fino a 3,5 t). Importi originali in BGN (weekend 10, settimana 15, mese 30, trimestre 54, anno 97 BGN), EUR al cambio fisso 1,95583 BGN/EUR. Nessuna esenzione per le elettriche."
+    }
+  ],
+  "barrierTollCountries": [
+    {
+      "code": "IT",
+      "name": "Italia",
+      "approxPerKmEur": 0.07,
+      "note": "Pedaggio a barriera/casello calcolato sui km percorsi (classe A = auto). Media ~7 cent/km (~9 EUR ogni 100 km). Pagamento in contanti, carta o Telepass. Tratte alpine/trafori piu' care."
+    },
+    {
+      "code": "FR",
+      "name": "Francia",
+      "approxPerKmEur": 0.1,
+      "note": "Peage a barriera per km, classe 1 (auto). Media ~10 cent/km (~9,5 EUR ogni 100 km); aumento ~0,92% dal 1 feb 2025. Tratte alpine/trafori fino a 50-100% in piu'. Telepeage disponibile."
+    },
+    {
+      "code": "ES",
+      "name": "Spagna",
+      "approxPerKmEur": 0.11,
+      "note": "Peaje a barriera solo su alcune autopistas (AP-) a pagamento; molte autovias sono gratuite. Range ampio ~8-20 cent/km; trafori (Cadi, Artxanda) molto piu' cari. Pagamento con carta o Via-T."
+    },
+    {
+      "code": "PT",
+      "name": "Portogallo",
+      "approxPerKmEur": 0.08,
+      "note": "Sistema misto: alcune autostrade a barriera, altre a pedaggio elettronico free-flow (portici, senza casello) che richiede dispositivo Via Verde o registrazione targa (Easytoll/Tollcard) per i veicoli stranieri. Media ~8 cent/km."
+    },
+    {
+      "code": "GR",
+      "name": "Grecia",
+      "approxPerKmEur": 0.09,
+      "note": "Pedaggio a barriera con tariffe fisse per tratta (non puramente proporzionale ai km), ogni autostrada gestita da concessionari diversi. Media ~9 EUR ogni 100 km. Pagamento in contanti, carta o transponder."
+    },
+    {
+      "code": "HR",
+      "name": "Croazia",
+      "approxPerKmEur": 0.08,
+      "note": "Pedaggio a barriera/casello (autocesta) calcolato sui km, classe 1 (auto). Media ~8 EUR ogni 100 km. Dal 2023 prezzi in EUR. Pagamento in contanti, carta o ENC. Il ponte di Peljesac e' gratuito."
+    }
+  ],
+  "generalNotes": "Dati riferiti al 2025. I prezzi delle vignette in valute non-euro (CHF, HUF, CZK, BGN) sono convertiti in EUR a titolo indicativo (cambi 2025: ~0,95 CHF/EUR, ~400 HUF/EUR, ~25 CZK/EUR; BGN a cambio fisso 1,95583). Verificare sempre l'importo esatto sul sito ufficiale al momento dell'acquisto. Quasi tutte le vignette sono ormai elettroniche e legate alla targa (niente bollino fisico): Austria, Svizzera, Slovenia, Ungheria, Cechia, Slovacchia, Romania e Bulgaria usano e-vignette. ATTENZIONE: per Austria e Svizzera le vignette 2-mesi/annuali acquistate online possono avere un ritardo di validita' per diritto di recesso del consumatore (es. Austria dal 18esimo giorno). Per i Paesi a barriera, l'approxPerKmEur e' un valore medio indicativo per auto (classe 1/A): il costo reale varia molto per tratta, e trafori/ponti/tratte alpine costano sensibilmente di piu'. In Spagna e Portogallo molte strade veloci sono gratuite e solo alcune autostrade sono a pedaggio. URL ufficiali: ASFINAG (AT) shop.asfinag.at; Svizzera e-vignette.ch (UDSC/BAZG); DARS (SI) evinjeta.dars.si; Nemzeti Utdijfizetesi (HU) ematrica.nemzetiutdij.hu; eDalnice (CZ) edalnice.cz; eZnamka (SK) eznamka.sk; CNAIR (RO) roviniete.ro; BG TOLL (BG) bgtoll.bg."
+}

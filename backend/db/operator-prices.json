@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "description": "Tariffe indicative ricarica rapida DC (€/kWh) per operatore (CPO) europeo. Valori medi 2024-2025, non ufficiali; le tariffe reali variano per piano/abbonamento, Paese e tipo di colonnina.",
+    "currency": "EUR",
+    "defaultPublicPrice": 0.59,
+    "homePrice": 0.25
+  },
+  "operators": [
+    { "match": ["ionity"], "name": "Ionity", "pricePerKwh": 0.69 },
+    { "match": ["tesla", "supercharger"], "name": "Tesla Supercharger", "pricePerKwh": 0.45 },
+    { "match": ["free to x", "freetox", "free-to-x"], "name": "Free To X", "pricePerKwh": 0.79 },
+    { "match": ["ewiva"], "name": "Ewiva", "pricePerKwh": 0.79 },
+    { "match": ["enel x", "enelx", "enel"], "name": "Enel X Way", "pricePerKwh": 0.59 },
+    { "match": ["be charge", "becharge", "be-charge"], "name": "Be Charge", "pricePerKwh": 0.65 },
+    { "match": ["fastned"], "name": "Fastned", "pricePerKwh": 0.59 },
+    { "match": ["allego"], "name": "Allego", "pricePerKwh": 0.66 },
+    { "match": ["enbw"], "name": "EnBW", "pricePerKwh": 0.61 },
+    { "match": ["atlante"], "name": "Atlante", "pricePerKwh": 0.55 },
+    { "match": ["a2a"], "name": "A2A", "pricePerKwh": 0.55 },
+    { "match": ["powerdot", "power dot"], "name": "Powerdot", "pricePerKwh": 0.55 },
+    { "match": ["shell", "recharge"], "name": "Shell Recharge", "pricePerKwh": 0.69 },
+    { "match": ["vattenfall", "incharge"], "name": "Vattenfall InCharge", "pricePerKwh": 0.57 },
+    { "match": ["totalenergies", "total energies", "total"], "name": "TotalEnergies", "pricePerKwh": 0.65 },
+    { "match": ["bp pulse", "bppulse", "aral"], "name": "BP Pulse / Aral", "pricePerKwh": 0.67 },
+    { "match": ["iberdrola"], "name": "Iberdrola", "pricePerKwh": 0.55 },
+    { "match": ["repsol"], "name": "Repsol", "pricePerKwh": 0.55 },
+    { "match": ["e.on", "eon"], "name": "E.ON", "pricePerKwh": 0.62 },
+    { "match": ["electra"], "name": "Electra", "pricePerKwh": 0.49 },
+    { "match": ["plenitude", "duferco"], "name": "Plenitude", "pricePerKwh": 0.59 },
+    { "match": ["movE", "neogy"], "name": "Neogy", "pricePerKwh": 0.59 }
+  ]
+}

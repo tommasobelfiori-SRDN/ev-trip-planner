@@ -1,0 +1,243 @@
+{
+  "apps": [
+    {
+      "operator": "Tesla (Supercharger)",
+      "appName": "Tesla",
+      "ios": "Tesla",
+      "android": "Tesla",
+      "regions": "Tutta Europa",
+      "notes": "App obbligatoria per i non-Tesla: creare account, selezionare 'Charge Your Non-Tesla', scegliere stazione e stallo. Ricarica ~30-40% piu cara per i non-Tesla; abbonamento opzionale ~12,99 €/mese azzera il sovrapprezzo. Solo connettori CCS/NACS sui siti aperti ai non-Tesla (V3/V4).",
+      "match": [
+        "tesla",
+        "supercharger"
+      ]
+    },
+    {
+      "operator": "IONITY",
+      "appName": "IONITY",
+      "ios": "IONITY",
+      "android": "IONITY",
+      "regions": "24 Paesi europei (rete HPC autostradale 150-350 kW)",
+      "notes": "Senza abbonamento si paga la tariffa 'IONITY Go' (piu alta). Abbonamento 'IONITY Passport' (~5,99 €/mese) per tariffe scontate. Membro ChargeLeague: con l'app IONITY si ricarica e paga anche su Fastned, Atlante ed Electra (e viceversa).",
+      "match": [
+        "ionity"
+      ]
+    },
+    {
+      "operator": "Enel X Way",
+      "appName": "Enel On Your Way (ex Enel X Way / JuicePass)",
+      "ios": "Enel On Your Way",
+      "android": "Enel On Your Way",
+      "regions": "Italia (rete principale) + roaming in Europa",
+      "notes": "Rebrand 2025: l'app Enel X Way e diventata 'Enel On Your Way'. Pagamento ad consumo senza abbonamento; piani/abbonamenti opzionali per tariffe ridotte. Pianificazione viaggio integrata.",
+      "match": [
+        "enel"
+      ]
+    },
+    {
+      "operator": "Be Charge (Plenitude)",
+      "appName": "Plenitude On The Road (ex Be Charge)",
+      "ios": "Plenitude On The Road",
+      "android": "Plenitude On The Road",
+      "regions": "Italia (rete proprietaria) + oltre 400.000 punti in Europa via roaming",
+      "notes": "Gruppo Eni Plenitude. L'app Be Charge e confluita nell'ecosistema Plenitude On The Road. Accesso a punti proprietari e partner; possibilita di profili tariffari/abbonamento.",
+      "match": [
+        "be charge",
+        "becharge"
+      ]
+    },
+    {
+      "operator": "Ewiva",
+      "appName": "Ewiva",
+      "ios": "Ewiva",
+      "android": "Ewiva",
+      "regions": "Italia (rete ultra-fast 100-400 kW lungo autostrade e strade principali)",
+      "notes": "Joint venture Enel X Way + Volkswagen Group. Ricarica ad consumo via app o RFID; roaming con IONITY e partner. Nessun abbonamento obbligatorio.",
+      "match": [
+        "ewiva"
+      ]
+    },
+    {
+      "operator": "Free To X",
+      "appName": "Free To X",
+      "ios": "Free To X",
+      "android": "Free To X",
+      "regions": "Italia (aree di servizio autostradali, gruppo Autostrade/Mundys)",
+      "notes": "Rete HPC fino a 300 kW nelle aree di servizio autostradali italiane. Ricarica ad consumo tramite app dedicata; accessibile anche in roaming da app multi-operatore.",
+      "match": [
+        "free to x",
+        "freetox",
+        "free-to-x"
+      ]
+    },
+    {
+      "operator": "Fastned",
+      "appName": "Fastned",
+      "ios": "Fastned",
+      "android": "Fastned",
+      "regions": "Paesi Bassi, Germania, Belgio, Francia, Regno Unito, Svizzera, Italia, Spagna",
+      "notes": "Ricarica ad consumo senza abbonamento; 'Gold Membership' (~11,99 €/mese) per sconto sul prezzo al kWh. Membro ChargeLeague: roaming con IONITY, Atlante, Electra dalla stessa app.",
+      "match": [
+        "fastned"
+      ]
+    },
+    {
+      "operator": "Allego",
+      "appName": "Allego",
+      "ios": "Allego",
+      "android": "Allego",
+      "regions": "Germania, Paesi Bassi, Belgio, Francia, Regno Unito e altri Paesi UE",
+      "notes": "App per avvio ricarica e pagamento ad consumo; tariffa fissa trasparente. Nessun abbonamento richiesto.",
+      "match": [
+        "allego"
+      ]
+    },
+    {
+      "operator": "EnBW",
+      "appName": "EnBW mobility+",
+      "ios": "EnBW mobility+: EV charging",
+      "android": "EnBW mobility+: EV charging",
+      "regions": "Germania (rete propria) + oltre 800.000 punti in roaming in tutta Europa",
+      "notes": "Tra le migliori app di roaming europee: prezzo unico EnBW su moltissime reti partner. Tariffa standard senza abbonamento oppure 'Vielfahrer-Tarif' (~5,99 €/mese) per sconti. Ottima per viaggi cross-border.",
+      "match": [
+        "enbw"
+      ]
+    },
+    {
+      "operator": "Atlante",
+      "appName": "myAtlante",
+      "ios": "myAtlante",
+      "android": "myAtlante",
+      "regions": "Italia, Francia, Spagna, Portogallo (gruppo NHOA)",
+      "notes": "Membro ChargeLeague: roaming con IONITY, Fastned, Electra. Da maggio 2026 integrazione della rete francese Powerdot nell'app myAtlante. Ricarica ad consumo, niente abbonamento obbligatorio.",
+      "match": [
+        "atlante"
+      ]
+    },
+    {
+      "operator": "A2A",
+      "appName": "A2A E-moving",
+      "ios": "A2A E-moving",
+      "android": "A2A E-moving",
+      "regions": "Italia (Nord Italia, Lombardia in particolare)",
+      "notes": "Ricarica ad consumo tramite app o tessera; roaming su reti partner. Possibili piani dedicati per clienti A2A.",
+      "match": [
+        "a2a",
+        "e-moving",
+        "emoving"
+      ]
+    },
+    {
+      "operator": "Shell Recharge",
+      "appName": "Shell (app unica) — ex Shell Recharge",
+      "ios": "Shell",
+      "android": "Shell",
+      "regions": "Europa (UK, Germania, Paesi Bassi, Francia, Italia e altri)",
+      "notes": "2025: l'app 'Shell Recharge' viene dismessa e la ricarica confluisce nell'app unica 'Shell'. Accesso a rete proprietaria + ampio roaming; pagamento ad consumo, nessun abbonamento obbligatorio. Verificare la transizione nel proprio Paese.",
+      "match": [
+        "shell",
+        "recharge"
+      ]
+    },
+    {
+      "operator": "TotalEnergies",
+      "appName": "TotalEnergies Services",
+      "ios": "TotalEnergies Services",
+      "android": "TotalEnergies Services",
+      "regions": "Francia, Belgio, Paesi Bassi, Germania, Regno Unito e altri",
+      "notes": "App per individuare e avviare la ricarica sulla rete TotalEnergies; pagamento ad consumo. In alcuni mercati il branding/app puo variare (es. reti acquisite).",
+      "match": [
+        "total"
+      ]
+    },
+    {
+      "operator": "BP Pulse / Aral pulse",
+      "appName": "bp pulse (Aral pulse in Germania)",
+      "ios": "bp pulse / Aral pulse",
+      "android": "bp pulse / Aral pulse",
+      "regions": "Regno Unito, Germania (Aral pulse), Belgio, Paesi Bassi, Austria",
+      "notes": "Aral pulse (Germania) e bp pulse condividono la stessa piattaforma tecnica. App per avvio ricarica e pagamento; possibili tariffe ridotte con account/abbonamento (es. PAYG vs sottoscrizione).",
+      "match": [
+        "bp pulse",
+        "bppulse",
+        "aral"
+      ]
+    },
+    {
+      "operator": "Iberdrola",
+      "appName": "Movilidad Iberdrola",
+      "ios": "Movilidad Iberdrola",
+      "android": "Movilidad Iberdrola",
+      "regions": "Spagna (principale), Portogallo",
+      "notes": "Individua punti in tempo reale, mostra tariffe e consente il pagamento senza contratto. Clienti luce Iberdrola possono avere condizioni agevolate.",
+      "match": [
+        "iberdrola"
+      ]
+    },
+    {
+      "operator": "Electra",
+      "appName": "Electra - Fast EV Charging",
+      "ios": "Electra",
+      "android": "Electra",
+      "regions": "Francia, Italia, Spagna, Belgio, Germania, Paesi Bassi, Svizzera, Austria e altri (10 Paesi)",
+      "notes": "Rete fast/ultra-fast urbana e autostradale. Ad consumo senza abbonamento; 'Electra+ Boost' (~9,99 €/mese) per sconti su Electra e tariffe agevolate su IONITY/Fastned/Atlante. Membro ChargeLeague.",
+      "match": [
+        "electra"
+      ]
+    },
+    {
+      "operator": "Powerdot",
+      "appName": "Powerdot",
+      "ios": "Powerdot",
+      "android": "Powerdot",
+      "regions": "Portogallo, Spagna, Francia, Belgio, Polonia, Italia",
+      "notes": "Ricarica ad consumo presso retailer/parcheggi partner. Da maggio 2026 la rete francese e integrata anche nell'app myAtlante di Atlante.",
+      "match": [
+        "powerdot",
+        "power dot"
+      ]
+    },
+    {
+      "operator": "Vattenfall InCharge",
+      "appName": "Vattenfall InCharge",
+      "ios": "Vattenfall InCharge",
+      "android": "Vattenfall InCharge",
+      "regions": "Svezia, Germania, Paesi Bassi, Regno Unito",
+      "notes": "Cerca stazioni, controlla i costi e paga dalla stessa app. Ad consumo; possibili tariffe dedicate ai clienti Vattenfall.",
+      "match": [
+        "vattenfall",
+        "incharge"
+      ]
+    },
+    {
+      "operator": "Plenitude (Eni Plenitude)",
+      "appName": "Plenitude On The Road",
+      "ios": "Plenitude On The Road",
+      "android": "Plenitude On The Road",
+      "regions": "Italia + oltre 400.000 punti in Europa via roaming",
+      "notes": "App principale del gruppo Eni Plenitude (include la rete Be Charge). Accesso a punti proprietari e partner tramite accordi di interoperabilita; profili tariffari opzionali.",
+      "match": [
+        "plenitude",
+        "eni"
+      ]
+    }
+  ],
+  "roamingApps": [
+    {
+      "appName": "Octopus Electroverse",
+      "notes": "Wallet di roaming multi-operatore: oltre 1 milione di colonnine in Europa con un unico account e una tessera RFID gratuita. Pagamento unificato + pianificatore di viaggio (beta dal 2025) con export su Google/Apple Maps. Ottimo per viaggi cross-border."
+    },
+    {
+      "appName": "Chargemap",
+      "notes": "App + Chargemap Pass (RFID): copertura di 700.000+ punti in Europa con prezzi trasparenti e pagamento unico. Forte in Francia e Sud Europa; utile come 'wallet' di backup quando non si ha l'app del singolo operatore."
+    },
+    {
+      "appName": "A Better Route Planner (ABRP)",
+      "notes": "Il riferimento per la pianificazione di viaggi EV: calcola le soste in base a modello auto, stato di carica e consumi reali. Integrazione live SoC, CarPlay/Android Auto. Non e un 'wallet' di pagamento: si abbina a un'app di roaming per pagare."
+    },
+    {
+      "appName": "PlugShare",
+      "notes": "Mappa e community piu grande al mondo: recensioni, foto, check-in e segnalazioni in tempo reale di colonnine fuori servizio. Ideale per verificare l'affidabilita di una stazione prima di arrivarci; pagamento limitato/non universale."
+    }
+  ]
+}

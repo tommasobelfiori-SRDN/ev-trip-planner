@@ -1,0 +1,24 @@
+{
+  "name": "ev-trip-planner-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "db:setup": "prisma generate && prisma db push --skip-generate && node src/seed.js",
+    "db:seed": "node src/seed.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^10.0.1",
+    "@prisma/client": "^6.1.0",
+    "fastify": "^5.2.0",
+    "p-limit": "^6.1.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.1.0"
+  }
+}

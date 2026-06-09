@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "description": "Tariffe pedaggi indicative per la STIMA interna (auto cat. A / EV). Valori medi, non ufficiali.",
+    "currency": "EUR",
+    "updated": "2025",
+    "note": "perKm = pedaggio a barriera su autostrada (EUR per km su tratti toll=yes). vignette = bollo a tempo (costo fisso per il periodo indicato)."
+  },
+  "IT": { "name": "Italia",        "model": "perKm",   "ratePerKm": 0.075 },
+  "FR": { "name": "Francia",       "model": "perKm",   "ratePerKm": 0.090 },
+  "ES": { "name": "Spagna",        "model": "perKm",   "ratePerKm": 0.090 },
+  "PT": { "name": "Portogallo",    "model": "perKm",   "ratePerKm": 0.090 },
+  "GR": { "name": "Grecia",        "model": "perKm",   "ratePerKm": 0.075 },
+  "HR": { "name": "Croazia",       "model": "perKm",   "ratePerKm": 0.075 },
+  "PL": { "name": "Polonia",       "model": "perKm",   "ratePerKm": 0.050 },
+  "IE": { "name": "Irlanda",       "model": "perKm",   "ratePerKm": 0.050 },
+  "AT": { "name": "Austria",       "model": "vignette", "vignette": { "10days": 12.4, "2months": 30.2, "year": 103.8 } },
+  "CH": { "name": "Svizzera",      "model": "vignette", "vignette": { "year": 42.0 } },
+  "SI": { "name": "Slovenia",      "model": "vignette", "vignette": { "7days": 16.0, "month": 32.0, "year": 117.5 } },
+  "HU": { "name": "Ungheria",      "model": "vignette", "vignette": { "10days": 13.5, "month": 21.5, "year": 165.0 } },
+  "CZ": { "name": "Cechia",        "model": "vignette", "vignette": { "10days": 17.0, "month": 24.5, "year": 92.0 } },
+  "SK": { "name": "Slovacchia",    "model": "vignette", "vignette": { "10days": 12.0, "month": 17.0, "year": 60.0 } },
+  "RO": { "name": "Romania",       "model": "vignette", "vignette": { "10days": 3.3, "month": 9.5, "year": 28.0 } },
+  "BG": { "name": "Bulgaria",      "model": "vignette", "vignette": { "weekend": 5.0, "week": 8.0, "year": 49.0 } },
+  "DE": { "name": "Germania",      "model": "free" },
+  "BE": { "name": "Belgio",        "model": "free" },
+  "NL": { "name": "Paesi Bassi",   "model": "free" },
+  "LU": { "name": "Lussemburgo",   "model": "free" },
+  "DK": { "name": "Danimarca",     "model": "free" },
+  "SE": { "name": "Svezia",        "model": "free" },
+  "NO": { "name": "Norvegia",      "model": "free" },
+  "FI": { "name": "Finlandia",     "model": "free" },
+  "GB": { "name": "Regno Unito",   "model": "free" }
+}
