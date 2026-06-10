@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useStore } from '../store.js'
 import { fmtDistance, fmtConsumption } from '../units.js'
 import { exportTripPdf } from '../exportPdf.js'
+import { buildTimelineRows } from '../timeline.js'
 
 export default function ResultsPanel() {
   const { planResult, selectedOptionId, setSelectedOption, poiFilter, togglePoi, saveCurrentTrip, pois, poisLoading, settings, prefs } =
@@ -246,7 +247,15 @@ export default function ResultsPanel() {
           {shareCopied ? '✓ Copiato!' : '🔗 Condividi'}
         </button>
         <button
-          onClick={() => exportTripPdf({ planResult, option, vehicleName: planResult.vehicle?.name, units })}
+          onClick={() =>
+            exportTripPdf({
+              planResult,
+              option,
+              vehicleName: planResult.vehicle?.name,
+              units,
+              timeline: buildTimelineRows(option, departureTime, units),
+            })
+          }
           className="flex-1 bg-brand hover:bg-brand-dark text-white rounded-lg py-2 text-sm font-medium"
         >
           📄 PDF
@@ -423,43 +432,10 @@ function co2SavedKg(option) {
   return Math.max(0, Math.round(petrol - ev))
 }
 
-function clockAt(base, minutes) {
-  const d = new Date(base.getTime() + minutes * 60000)
-  return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-}
-
 /** Itinerario con orari: partenza → soste (ricariche e riposi in ordine di km) → arrivo. */
 function Timeline({ option, departureTime, units }) {
-  const base = departureTime ? new Date(departureTime) : new Date()
-  if (Number.isNaN(base.getTime())) return null
-  const total = option.distanceKm || 1
-
-  // Eventi ordinati per posizione: ricariche (stops) + riposi (userStops).
-  const events = [
-    ...option.stops.map((s) => ({ kind: 'ricarica', alongKm: s.alongKm, dur: s.chargeMinutes, label: s.name, extra: `${Math.round(s.arriveSocPct)}→${Math.round(s.departSocPct)}%` })),
-    ...(option.userStops || [])
-      .filter((u) => u.type === 'riposo')
-      .map((u) => ({ kind: 'riposo', alongKm: u.alongKm, dur: u.durationMin, label: u.label || 'Pausa', extra: null })),
-  ].sort((a, b) => a.alongKm - b.alongKm)
-
-  let elapsed = 0
-  let prevKm = 0
-  let stopTime = 0
-  const rows = [{ time: clockAt(base, 0), icon: '🚗', text: 'Partenza', sub: null }]
-  for (const ev of events) {
-    const driveMin = option.drivingMinutes * ((ev.alongKm - prevKm) / total)
-    elapsed += driveMin
-    rows.push({
-      time: clockAt(base, elapsed + stopTime),
-      icon: ev.kind === 'ricarica' ? '⚡' : '☕',
-      text: `${ev.label}`.slice(0, 38),
-      sub: `${ev.kind === 'ricarica' ? 'ricarica' : 'pausa'} ${fmtTime(ev.dur)}${ev.extra ? ' · ' + ev.extra : ''} · ${fmtDistance(ev.alongKm, units)}`,
-    })
-    stopTime += ev.dur
-    prevKm = ev.alongKm
-  }
-  elapsed += option.drivingMinutes * ((total - prevKm) / total)
-  rows.push({ time: clockAt(base, elapsed + stopTime), icon: '🏁', text: 'Arrivo', sub: null })
+  const rows = buildTimelineRows(option, departureTime, units)
+  if (!rows) return null
 
   return (
     <div className="rounded-lg border border-slate-200 p-3">

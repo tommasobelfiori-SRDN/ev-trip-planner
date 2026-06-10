@@ -21,7 +21,7 @@ export function exportTripPdf(args) {
 }
 
 /** Costruisce il documento PDF (separato dal salvataggio, per i test). */
-export function buildTripDoc({ planResult, option, vehicleName, units }) {
+export function buildTripDoc({ planResult, option, vehicleName, units, timeline }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const W = 210
   const H = 297
@@ -68,7 +68,17 @@ export function buildTripDoc({ planResult, option, vehicleName, units }) {
   doc.setFontSize(9)
   doc.setTextColor(...SLATE)
   const dateStr = new Date().toLocaleDateString('it-IT')
-  text(`Veicolo: ${vehicleName || '—'}   ·   Opzione: ${option?.label || '—'}   ·   Data: ${dateStr}`, M, y)
+  const conditions = [
+    planResult?.weather ? `meteo ${planResult.weather.tempC}°C` : null,
+    planResult?.elevation ? 'salite/discese incluse' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  text(
+    `Veicolo: ${vehicleName || '—'}   ·   Opzione: ${option?.label || '—'}   ·   Data: ${dateStr}${conditions ? '   ·   ' + conditions : ''}`,
+    M,
+    y
+  )
   y += 7
 
   // --- Riepilogo ---
@@ -180,6 +190,33 @@ export function buildTripDoc({ planResult, option, vehicleName, units }) {
     text(fmtDistance(0, units), x0, y0 + chH + 4)
     text(fmtDistance(maxKm, units), x0 + plotW, y0 + chH + 4, { align: 'right' })
     y += chH + 8
+  }
+
+  // --- Itinerario con orari ---
+  if (Array.isArray(timeline) && timeline.length >= 2) {
+    sectionTitle('Itinerario')
+    const ICON_LABEL = { '🚗': 'Partenza', '⚡': 'Ricarica', '☕': 'Pausa', '🏁': 'Arrivo' }
+    doc.setFontSize(9)
+    for (const r of timeline) {
+      ensure(6)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...DARK)
+      text(r.time, M, y)
+      doc.setFont('helvetica', 'normal')
+      const kindLabel = ICON_LABEL[r.icon] || ''
+      const main = r.text === 'Partenza' || r.text === 'Arrivo' ? r.text : `${kindLabel}: ${r.text}`
+      text(main.slice(0, 60), M + 16, y)
+      if (r.sub) {
+        doc.setTextColor(...SLATE)
+        doc.setFontSize(8)
+        text(String(r.sub).slice(0, 70), M + 16, y + 3.6)
+        doc.setFontSize(9)
+        doc.setTextColor(...DARK)
+        y += 4
+      }
+      y += 5.5
+    }
+    y += 2
   }
 
   // --- Soste di ricarica ---

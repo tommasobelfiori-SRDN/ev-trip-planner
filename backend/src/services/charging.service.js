@@ -167,6 +167,26 @@ async function fetchOsmAll(bboxes) {
   })
 }
 
+// Reti di ricarica RAPIDA note: se la colonnina appartiene a una di queste, è DC anche
+// senza tag socket (potenza tipica della rete, prudente).
+const DC_NETWORKS = [
+  [/ionity/i, 350],
+  [/supercharger|tesla/i, 250],
+  [/free\s*to\s*x|freetox/i, 300],
+  [/ewiva/i, 300],
+  [/electra/i, 300],
+  [/fastned/i, 300],
+  [/atlante/i, 150],
+  [/aral\s*pulse|bp\s*pulse/i, 300],
+  [/enbw/i, 300],
+  [/allego/i, 150],
+]
+
+function dcNetworkKw(text) {
+  for (const [re, kw] of DC_NETWORKS) if (re.test(text)) return kw
+  return null
+}
+
 // Gruppi di socket OSM -> connettore standard. (type2_combo = CCS, NON Type 2.)
 const OSM_SOCKETS = [
   { title: 'CCS', keys: ['type2_combo', 'ccs', 'tesla_supercharger', 'tesla_supercharger_ccs'], dc: true },
@@ -174,7 +194,7 @@ const OSM_SOCKETS = [
   { title: 'Type 2', keys: ['type2', 'type2_cable', 'mennekes', 'scame'], dc: false },
 ]
 
-function parseOsmStation(el) {
+export function parseOsmStation(el) {
   const tags = el.tags || {}
   const lat = el.lat ?? el.center?.lat
   const lng = el.lon ?? el.center?.lon // Overpass `out center` usa center.lon (NON .lng)
@@ -211,9 +231,12 @@ function parseOsmStation(el) {
     }
   }
 
-  // Nessun socket dichiarato: inferisci dal maxpower (o assumi AC Type 2 lento).
+  // Nessun socket dichiarato: inferisci da maxpower, dalla RETE (alcune sono DC per definizione)
+  // o, in ultima istanza, assumi prudentemente AC 22 kW.
   if (connectors.length === 0) {
+    const netKw = dcNetworkKw(`${tags.operator || ''} ${tags.network || ''} ${tags.brand || ''} ${tags.name || ''}`)
     if (maxKw && maxKw >= 43) connectors.push({ title: 'CCS', powerKw: maxKw, dc: true })
+    else if (netKw) connectors.push({ title: 'CCS', powerKw: maxKw || netKw, dc: true })
     else connectors.push({ title: 'Type 2', powerKw: maxKw || 22, dc: false })
   }
 

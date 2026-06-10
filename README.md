@@ -17,14 +17,23 @@ Open Charge Map, Overpass). Nessun dato Apple/Google, nessuna chiave obbligatori
 - Percorso su mappa con **3 opzioni**: *più veloce* · *più economico* · *meno soste*
 - **Ottimizzatore di ricarica realistico**: curve di ricarica per veicolo, SoC di riserva,
   consumo che cresce con la velocità autostradale (no soste “fantasma”, no ricariche da 4%)
+- **Elevazione reale** lungo il percorso (Open-Meteo, senza chiave): salite e discese nel consumo
+- **Meteo automatico**: temperatura prevista lungo il percorso all'orario di partenza
+- **Orario di partenza + Itinerario con orari** (partenza, ricariche, pause, arrivo)
+- **Salute batteria %** (degrado) applicata ai calcoli · **CO₂ risparmiata** vs benzina
 - **Tappe e soste** di tre tipi, con **riordino drag & drop**:
   - 📍 *Passaggio* — luogo da attraversare
   - ⚡ *Ricarica* — fermata obbligatoria con **% di carica target** scelta da te
   - ☕ *Riposo/pranzo* — pausa con durata, sommata al tempo totale
-- Toggle **evita pedaggi** / **evita autostrade**
+- Toggle **evita pedaggi** / **evita autostrade** · **condivisione viaggio via link**
 
 **Colonnine**
 - Dati colonnine da **OpenStreetMap** (senza chiave) o **Open Charge Map** (con `OCM_API_KEY`)
+- **Tutte le colonnine candidate sulla mappa** (DC evidenti, AC discrete) con popup
+  dettagliato (potenza, stalli, costo, orari) e pulsante **“Sosta qui”**
+- **Affidabilità**: escluse colonnine private/solo-bici/dismesse; **AC vs DC realistico**
+  (la ricarica AC è limitata dal caricatore di bordo ~11 kW, non dalla curva DC);
+  reti rapide note (Ionity, Supercharger, …) riconosciute anche senza tag completi
 - **Filtro per rete/operatore** (es. solo Tesla, o un sottoinsieme)
 - Potenza minima configurabile; se mancano colonnine rapide, **include automaticamente** quelle più lente
 - **Prezzi per operatore** (Ionity, Tesla, Enel X Way, Fastned, …) usati nel calcolo del costo
@@ -95,6 +104,7 @@ Tutte le chiavi sono **opzionali**; l'app funziona anche senza, con funzioni rid
 | Routing | OpenRouteService **o** OSRM | ORS opzionale |
 | Colonnine | OpenStreetMap (Overpass) **o** Open Charge Map | OCM opzionale |
 | POI (cibo, aree servizio) | Overpass (OSM) | no |
+| Elevazione + meteo | Open-Meteo | no |
 | Pedaggi a barriera | stima per Paese **o** TollGuru | TollGuru opzionale |
 | Vignette | prezzi ufficiali pubblicati | no |
 | Tile mappa | MapLibre + OSM raster | no |
