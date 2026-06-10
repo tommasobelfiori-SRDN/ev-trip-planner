@@ -28,6 +28,9 @@ const PLAN_SCHEMA = {
       avoidHighways: { type: 'boolean' },
       minPowerKw: { type: 'number', minimum: 0, maximum: 1000 },
       corridorKm: { type: 'number', minimum: 0.5, maximum: 50 },
+      batteryHealthPct: { type: 'number', minimum: 50, maximum: 100 },
+      useWeather: { type: 'boolean' },
+      departureTime: { type: 'string', maxLength: 40 },
       networks: { type: 'array', maxItems: 50, items: { type: 'string', maxLength: 80 } },
       poiCategories: { type: 'array', maxItems: 10, items: { type: 'string', maxLength: 30 } },
       stops: {
@@ -104,6 +107,9 @@ export default async function planRoutes(app) {
         corridorKm: Math.min(50, Math.max(0.5, numOr(b.corridorKm, 5))),
         networks: Array.isArray(b.networks) ? b.networks : [],
         poiCategories: Array.isArray(b.poiCategories) ? b.poiCategories : ['food', 'fuel', 'services'],
+        batteryHealthPct: numOr(b.batteryHealthPct, 100),
+        useWeather: b.useWeather !== false,
+        departureTime: typeof b.departureTime === 'string' ? b.departureTime : undefined,
       })
       return result
     } catch (e) {

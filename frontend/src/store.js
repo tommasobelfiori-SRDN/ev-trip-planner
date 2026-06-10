@@ -35,6 +35,9 @@ export const useStore = create((set, get) => ({
     departSocPct: 90,
     arriveSocPct: 10,
     tempC: 20,
+    useWeather: true, // temperatura automatica dal meteo lungo il percorso
+    departureTime: '', // ISO locale (datetime-local); vuoto = adesso
+    batteryHealthPct: 100,
     avoidTolls: false,
     avoidHighways: false,
     minPowerKw: 50,
@@ -69,8 +72,55 @@ export const useStore = create((set, get) => ({
         operators: prices.operators || [],
         selectedVehicleId: get().selectedVehicleId || vehicles[0]?.id || null,
       })
+      // Viaggio condiviso via link (?trip=...): ripristina e pianifica subito.
+      get().restoreFromUrl()
     } catch (e) {
       set({ error: e.message })
+    }
+  },
+
+  // --- Condivisione viaggio via URL ---
+  shareUrl() {
+    const { origin, dest, stops, selectedVehicleId, prefs } = get()
+    if (!origin || !dest) return null
+    const data = {
+      o: origin,
+      d: dest,
+      s: stops.filter((s) => Number.isFinite(s.lat)),
+      v: selectedVehicleId,
+      p: {
+        departSocPct: prefs.departSocPct,
+        arriveSocPct: prefs.arriveSocPct,
+        minPowerKw: prefs.minPowerKw,
+        batteryHealthPct: prefs.batteryHealthPct,
+        avoidTolls: prefs.avoidTolls,
+        avoidHighways: prefs.avoidHighways,
+        networks: prefs.networks,
+      },
+    }
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))))
+    return `${location.origin}${location.pathname}?trip=${encoded}`
+  },
+
+  restoreFromUrl() {
+    try {
+      const encoded = new URLSearchParams(location.search).get('trip')
+      if (!encoded) return
+      const data = JSON.parse(decodeURIComponent(escape(atob(encoded))))
+      if (!data?.o || !data?.d) return
+      const vehicleOk = get().vehicles.some((v) => v.id === data.v)
+      set({
+        origin: data.o,
+        dest: data.d,
+        stops: Array.isArray(data.s) ? data.s.slice(0, MAX_STOPS) : [],
+        selectedVehicleId: vehicleOk ? data.v : get().selectedVehicleId,
+        prefs: { ...get().prefs, ...(data.p || {}) },
+      })
+      // pulisci l'URL (evita ri-pianificazioni a ogni reload) e pianifica
+      history.replaceState(null, '', location.pathname)
+      get().plan()
+    } catch {
+      /* link malformato: ignora */
     }
   },
 
@@ -116,6 +166,14 @@ export const useStore = create((set, get) => ({
   setStopTarget: (i, targetSocPct) =>
     set({ stops: get().stops.map((s, idx) => (idx === i ? { ...s, targetSocPct } : s)) }),
   removeStop: (i) => set({ stops: get().stops.filter((_, idx) => idx !== i) }),
+  // Aggiunge una sosta di RICARICA da un click sulla mappa (popup colonnina).
+  addChargeStopAt: (lat, lng, label) => {
+    if (get().stops.length >= MAX_STOPS) return false
+    set({
+      stops: [...get().stops, { type: 'ricarica', durationMin: 30, targetSocPct: 80, label: label || 'Colonnina', lat, lng }],
+    })
+    return true
+  },
   reorderStops: (from, to) => {
     const arr = [...get().stops]
     if (from < 0 || from >= arr.length || to < 0 || to >= arr.length || from === to) return

@@ -64,7 +64,11 @@ export async function stationsNearRoute(points, opts = {}) {
     if (!stationMatchesNetworks(st.operator, networks)) continue
     const compatible = st.connectors.filter((c) => connectionMatches(c.title, connectors))
     if (compatible.length === 0) continue
-    const maxPowerKw = Math.max(0, ...st.connectors.map((c) => c.powerKw || 0))
+    // Potenza separata DC (rapida, segue la curva del veicolo) e AC (limitata dal caricatore di bordo).
+    const isDc = (c) => c.dc ?? /ccs|combo|chademo/i.test(c.title || '')
+    const dcKw = Math.max(0, ...st.connectors.filter(isDc).map((c) => c.powerKw || 0))
+    const acKw = Math.max(0, ...st.connectors.filter((c) => !isDc(c)).map((c) => c.powerKw || 0))
+    const maxPowerKw = Math.max(dcKw, acKw)
     if (maxPowerKw < minPowerKw) continue
     const near = nearestOnPath(points, cum, st)
     if (near.distKm > corridorKm) continue
@@ -75,6 +79,12 @@ export async function stationsNearRoute(points, opts = {}) {
       lat: st.lat,
       lng: st.lng,
       maxPowerKw,
+      dc: dcKw > 0,
+      dcKw,
+      acKw,
+      capacity: st.capacity ?? null,
+      fee: st.fee ?? null,
+      openingHours: st.openingHours ?? null,
       connectors: st.connectors.map((c) => ({ title: c.title, powerKw: c.powerKw })),
       alongKm: near.alongKm,
       detourKm: near.distKm,
@@ -170,6 +180,20 @@ function parseOsmStation(el) {
   const lng = el.lon ?? el.center?.lon // Overpass `out center` usa center.lon (NON .lng)
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
 
+  // --- Affidabilità: scarta le colonnine NON utilizzabili in viaggio ---
+  // 1) accesso privato/vietato (wallbox aziendali, garage privati…)
+  if (['private', 'no', 'customers'].includes(tags.access)) return null
+  // 2) stazioni solo per bici/scooter (auto esplicitamente esclusa o solo mezzi leggeri)
+  if (tags.motorcar === 'no' || tags.car === 'no') return null
+  const onlyLight =
+    (tags.bicycle === 'yes' || tags.scooter === 'yes') && tags.motorcar !== 'yes' && tags.car !== 'yes'
+  const hasCarSocket = Object.keys(tags).some(
+    (k) => k.startsWith('socket:') && !/small_electric|bike|schuko/.test(k) && tags[k] !== 'no'
+  )
+  if (onlyLight && !hasCarSocket) return null
+  // 3) non ancora costruita / dismessa
+  if (tags.construction || tags.proposed || tags.disused === 'yes' || tags['disused:amenity']) return null
+
   const maxKw = parseKw(tags.maxpower) || parseKw(tags['charging_station:output'])
   const connectors = []
   for (const grp of OSM_SOCKETS) {
@@ -183,14 +207,14 @@ function parseOsmStation(el) {
       }
     }
     if (present) {
-      connectors.push({ title: grp.title, powerKw: outputKw || maxKw || (grp.dc ? 50 : 22) })
+      connectors.push({ title: grp.title, powerKw: outputKw || maxKw || (grp.dc ? 50 : 22), dc: grp.dc })
     }
   }
 
   // Nessun socket dichiarato: inferisci dal maxpower (o assumi AC Type 2 lento).
   if (connectors.length === 0) {
-    if (maxKw && maxKw >= 43) connectors.push({ title: 'CCS', powerKw: maxKw })
-    else connectors.push({ title: 'Type 2', powerKw: maxKw || 22 })
+    if (maxKw && maxKw >= 43) connectors.push({ title: 'CCS', powerKw: maxKw, dc: true })
+    else connectors.push({ title: 'Type 2', powerKw: maxKw || 22, dc: false })
   }
 
   return {
@@ -200,6 +224,10 @@ function parseOsmStation(el) {
     lat,
     lng,
     connectors,
+    dc: connectors.some((c) => c.dc), // almeno un connettore in corrente continua (ricarica rapida)
+    capacity: Number(tags.capacity) || null, // numero di stalli, se dichiarato
+    fee: tags.fee === 'no' ? 'gratis' : tags.fee === 'yes' ? 'a pagamento' : null,
+    openingHours: tags.opening_hours || null,
   }
 }
 

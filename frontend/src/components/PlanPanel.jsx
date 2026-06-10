@@ -212,8 +212,38 @@ export default function PlanPanel() {
       <div className="grid grid-cols-2 gap-3">
         <Slider label={`SoC partenza ${prefs.departSocPct}%`} min={20} max={100} value={prefs.departSocPct} onChange={(v) => setPrefs({ departSocPct: v })} />
         <Slider label={`SoC arrivo min ${prefs.arriveSocPct}%`} min={5} max={50} value={prefs.arriveSocPct} onChange={(v) => setPrefs({ arriveSocPct: v })} />
-        <Slider label={`Temperatura ${fmtTemp(prefs.tempC, settings.units)}`} min={-10} max={40} value={prefs.tempC} onChange={(v) => setPrefs({ tempC: v })} />
         <Slider label={`Potenza min ${prefs.minPowerKw} kW`} min={0} max={250} step={10} value={prefs.minPowerKw} onChange={(v) => setPrefs({ minPowerKw: v })} />
+        <Slider
+          label={`Salute batteria ${prefs.batteryHealthPct}%`}
+          min={50}
+          max={100}
+          value={prefs.batteryHealthPct}
+          onChange={(v) => setPrefs({ batteryHealthPct: v })}
+        />
+      </div>
+
+      {/* Partenza programmata + meteo */}
+      <div className="grid grid-cols-2 gap-3 items-end">
+        <div>
+          <label className="block text-[11px] text-slate-500 mb-1">Partenza (per meteo e orari)</label>
+          <input
+            type="datetime-local"
+            className="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-xs"
+            value={prefs.departureTime}
+            onChange={(e) => setPrefs({ departureTime: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="flex items-center gap-2 text-xs mb-1">
+            <input type="checkbox" checked={prefs.useWeather} onChange={(e) => setPrefs({ useWeather: e.target.checked })} />
+            🌡 Meteo reale lungo il percorso
+          </label>
+          {prefs.useWeather ? (
+            <p className="text-[10px] text-slate-400">Temperatura automatica (Open-Meteo)</p>
+          ) : (
+            <Slider label={`Temperatura ${fmtTemp(prefs.tempC, settings.units)}`} min={-10} max={40} value={prefs.tempC} onChange={(v) => setPrefs({ tempC: v })} />
+          )}
+        </div>
       </div>
 
       <NetworkSelector operators={operators} selected={prefs.networks} toggle={toggleNetwork} clear={clearNetworks} />

@@ -3,8 +3,19 @@ import { stationsNearRoute } from './charging.service.js'
 import { estimateToll } from './toll.service.js'
 import { estimateConsumption, chargeTimeMinutes } from './consumption.service.js'
 import { priceForOperator, HOME_PRICE } from './pricing.service.js'
+import { addElevation, routeTemperature } from './openmeteo.service.js'
 import { haversineKm, cumulativeKm, nearestOnPath } from '../lib/geo.js'
 import { appsForOperators } from './apps.service.js'
+
+// Caricatore di bordo AC tipico (Type 2): la ricarica in corrente alternata è limitata
+// dall'auto (~11 kW), NON dalla potenza della colonnina né dalla curva DC.
+const AC_ONBOARD_KW = 11
+
+/** Potenza di ricarica EFFETTIVA a una stazione: DC segue la curva, AC è cap dal veicolo. */
+function stationChargeKw(s) {
+  if (s.dc) return s.dcKw || s.maxPowerKw || 50
+  return Math.min(s.acKw || s.maxPowerKw || 22, AC_ONBOARD_KW)
+}
 
 // Esegue una promise con un tetto di tempo: oltre il limite restituisce il fallback.
 function withTimeout(promise, ms, fallback) {
@@ -24,8 +35,16 @@ const MODES = {
  * Pianifica un viaggio EV e restituisce 2-3 opzioni (più veloce / più economico / meno soste).
  */
 export async function planTrip(params) {
-  const { origin, dest, vehicle } = params
+  const { origin, dest } = params
   const warnings = []
+
+  // Salute batteria (%): degrado reale -> capacità utilizzabile ridotta in tutti i calcoli.
+  const healthPct = Math.min(100, Math.max(50, Number(params.batteryHealthPct) || 100))
+  const vehicle =
+    healthPct < 100
+      ? { ...params.vehicle, usableKwh: (params.vehicle.usableKwh * healthPct) / 100 }
+      : params.vehicle
+  params.vehicle = vehicle
 
   // Soste scelte dall'utente (passaggio / ricarica / riposo). Tutte sono punti di passaggio del percorso.
   const stops = (Array.isArray(params.stops) ? params.stops : Array.isArray(params.waypoints) ? params.waypoints : [])
@@ -52,6 +71,27 @@ export async function planTrip(params) {
     avoidHighways: params.avoidHighways,
   })
   warnings.push(...baseRoute.warnings)
+
+  // 1b) Elevazione reale (Open-Meteo) se il router non la fornisce: salite/discese nel consumo.
+  if (!baseRoute.hasElevation) {
+    try {
+      const ok = await withTimeout(addElevation(baseRoute.points), 9000, false)
+      if (ok) baseRoute.hasElevation = true
+    } catch {
+      /* senza elevazione: consumo piatto, come prima */
+    }
+  }
+
+  // 1c) Temperatura prevista lungo il percorso (Open-Meteo) all'orario di partenza.
+  let weather = null
+  if (params.useWeather !== false) {
+    try {
+      weather = await withTimeout(routeTemperature(baseRoute.points, params.departureTime), 8000, null)
+      if (weather && Number.isFinite(weather.tempC)) params.tempC = weather.tempC
+    } catch {
+      weather = null // fallback: temperatura manuale dello slider
+    }
+  }
 
   // 2) Dati per la geometria base.
   const ctxBase = await gatherForRoute(baseRoute, params)
@@ -125,12 +165,30 @@ export async function planTrip(params) {
   const usedOperators = [...new Set(options.flatMap((o) => o.stops.map((s) => s.operator)).filter(Boolean))]
   const chargingApps = appsForOperators(usedOperators)
 
+  // Tutte le colonnine candidate lungo il corridoio (per il layer mappa), proiezione leggera.
+  const stations = (ctxBase.stations || []).slice(0, 400).map((s) => ({
+    id: s.id,
+    name: s.name,
+    operator: s.operator,
+    lat: s.lat,
+    lng: s.lng,
+    maxPowerKw: s.maxPowerKw,
+    dc: !!s.dc,
+    capacity: s.capacity,
+    fee: s.fee,
+    openingHours: s.openingHours,
+    alongKm: round1(s.alongKm),
+  }))
+
   return {
     origin,
     dest,
     vehicle: { id: vehicle.id, name: vehicle.name },
     provider: baseRoute.provider,
     options,
+    stations,
+    weather: weather ? { tempC: weather.tempC, source: 'open-meteo' } : null,
+    elevation: !!baseRoute.hasElevation,
     pois: [], // caricati separatamente dal frontend (/api/pois)
     toll: ctxBase.toll,
     chargingApps,
@@ -393,7 +451,7 @@ export function planCharging(routeResult, ctx, vehicle, params, capSoc, mode) {
       targetSoc = Math.min(100, Math.max(arrSoc + 1, nextAnchor.targetSocPct))
     }
 
-    const stationKw = chosen.maxPowerKw || 50
+    const stationKw = stationChargeKw(chosen)
     const minutes = chargeTimeMinutes(vehicle, arrSoc, targetSoc, stationKw)
     const energyAdded = (usable * (targetSoc - arrSoc)) / 100
     const price = priceForOperator(chosen.operator)
@@ -442,7 +500,7 @@ function chooseStation(reachable, farthest, mode) {
   if (mode === 'fewest') return farthest
   if (mode === 'fastest') {
     const tail = reachable.filter((s) => s.alongKm >= farthest.alongKm - 30)
-    return tail.reduce((a, b) => (b.maxPowerKw > a.maxPowerKw ? b : a), tail[0])
+    return tail.reduce((a, b) => (stationChargeKw(b) > stationChargeKw(a) ? b : a), tail[0])
   }
   // cheapest: nella coda raggiungibile preferisci l'operatore più economico
   const tail = reachable.filter((s) => s.alongKm >= farthest.alongKm - 45)

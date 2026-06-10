@@ -108,6 +108,18 @@ export default function Map() {
     const pois = (poisData || []).filter((p) => poiFilter[p.category])
     const poiFeatures = pois.map((p) => pt(p, { category: p.category, name: p.name, popup: poiPopup(p) }))
     map.getSource('pois').setData({ type: 'FeatureCollection', features: poiFeatures })
+
+    // layer colonnine candidate (tutte, non solo le soste)
+    const stationFeatures = (planResult?.stations || []).map((s) =>
+      pt(s, {
+        dc: !!s.dc,
+        name: s.name,
+        lat: s.lat,
+        lng: s.lng,
+        popup: stationPopup(s),
+      })
+    )
+    map.getSource('stations').setData({ type: 'FeatureCollection', features: stationFeatures })
   }, [ready, planResult, selectedOptionId, poiFilter, poisData, origin, dest, stops])
 
   // Inquadra il percorso SOLO quando cambia la geometria della rotta (non a ogni modifica di sosta/POI).
@@ -172,6 +184,22 @@ function addLayers(map) {
     },
   })
 
+  // Tutte le colonnine candidate lungo il corridoio (non solo le soste scelte).
+  map.addSource('stations', { type: 'geojson', data: EMPTY_FC })
+  map.addLayer({
+    id: 'stations-circle',
+    type: 'circle',
+    source: 'stations',
+    paint: {
+      // DC rapide più evidenti (verde acqua), AC piccole e discrete (grigio-azzurro)
+      'circle-radius': ['case', ['boolean', ['get', 'dc'], false], 5, 3.5],
+      'circle-color': ['case', ['boolean', ['get', 'dc'], false], '#0d9488', '#94a3b8'],
+      'circle-stroke-width': 1,
+      'circle-stroke-color': '#fff',
+      'circle-opacity': 0.9,
+    },
+  })
+
   map.addSource('stops', { type: 'geojson', data: EMPTY_FC })
   map.addLayer({
     id: 'stops-circle',
@@ -199,6 +227,41 @@ function bindPopups(map) {
       popup.setLngLat(e.lngLat).setHTML(f.properties.popup || f.properties.name || '').addTo(map)
     })
   }
+
+  // Colonnine: popup con pulsante "Sosta qui" (aggiunge una sosta di ricarica al viaggio).
+  const stationPopupEl = new maplibregl.Popup({ closeButton: true, offset: 12, maxWidth: '280px' })
+  map.on('mouseenter', 'stations-circle', () => (map.getCanvas().style.cursor = 'pointer'))
+  map.on('mouseleave', 'stations-circle', () => (map.getCanvas().style.cursor = ''))
+  map.on('click', 'stations-circle', (e) => {
+    const f = e.features?.[0]
+    if (!f) return
+    const p = f.properties
+    const el = document.createElement('div')
+    el.innerHTML = p.popup || ''
+    const btn = document.createElement('button')
+    btn.textContent = '⚡ Sosta qui'
+    btn.style.cssText =
+      'margin-top:6px;width:100%;background:#16a34a;color:#fff;border:0;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer'
+    btn.onclick = () => {
+      const ok = useStore.getState().addChargeStopAt(Number(p.lat), Number(p.lng), p.name)
+      btn.textContent = ok ? '✓ Aggiunta! Ripianifica il viaggio' : 'Limite soste raggiunto'
+      btn.disabled = true
+      btn.style.background = ok ? '#0d9488' : '#94a3b8'
+    }
+    el.appendChild(btn)
+    stationPopupEl.setLngLat(e.lngLat).setDOMContent(el).addTo(map)
+  })
+}
+
+function stationPopup(s) {
+  const rows = [
+    `<b>${esc(s.name)}</b>`,
+    `${s.dc ? '⚡ DC rapida' : '🔌 AC'} · max ${s.maxPowerKw} kW${s.operator ? ' · ' + esc(s.operator) : ''}`,
+  ]
+  if (s.capacity) rows.push(`🅿️ ${s.capacity} stalli`)
+  if (s.fee) rows.push(`💶 ${esc(s.fee)}`)
+  if (s.openingHours) rows.push(`🕒 ${esc(String(s.openingHours).slice(0, 40))}`)
+  return rows.join('<br/>')
 }
 
 function stopPopup(s, idx) {

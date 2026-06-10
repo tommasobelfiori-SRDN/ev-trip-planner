@@ -4,9 +4,11 @@ import { fmtDistance, fmtConsumption } from '../units.js'
 import { exportTripPdf } from '../exportPdf.js'
 
 export default function ResultsPanel() {
-  const { planResult, selectedOptionId, setSelectedOption, poiFilter, togglePoi, saveCurrentTrip, pois, poisLoading, settings } =
+  const { planResult, selectedOptionId, setSelectedOption, poiFilter, togglePoi, saveCurrentTrip, pois, poisLoading, settings, prefs } =
     useStore()
   const units = settings.units
+  const departureTime = prefs.departureTime
+  const [shareCopied, setShareCopied] = useState(false)
   if (!planResult) {
     return (
       <div className="text-sm text-slate-400 p-4">
@@ -43,6 +45,25 @@ export default function ResultsPanel() {
         </div>
       )}
 
+      {/* Condizioni usate nel calcolo */}
+      <div className="flex flex-wrap gap-1.5 text-[11px]">
+        {planResult.weather && (
+          <span className="bg-sky-50 text-sky-700 border border-sky-200 rounded-full px-2 py-0.5">
+            🌡 {planResult.weather.tempC}°C meteo reale
+          </span>
+        )}
+        {planResult.elevation && (
+          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5">
+            ⛰ salite/discese incluse
+          </span>
+        )}
+        {planResult.stations?.length > 0 && (
+          <span className="bg-teal-50 text-teal-700 border border-teal-200 rounded-full px-2 py-0.5">
+            🔌 {planResult.stations.length} colonnine sul percorso
+          </span>
+        )}
+      </div>
+
       {/* Riepilogo */}
       <div className="grid grid-cols-2 gap-2 text-sm">
         <Stat label="Distanza" value={fmtDistance(option.distanceKm, units)} />
@@ -52,7 +73,11 @@ export default function ResultsPanel() {
         {option.restMinutes > 0 && <Stat label="Riposo" value={fmtTime(option.restMinutes)} />}
         <Stat label="Energia" value={`${option.energyKwh} kWh (${fmtConsumption(option.avgWhKm, units)})`} />
         <Stat label="Soste" value={`${option.stops.length}`} />
+        <Stat label="CO₂ risparmiata" value={`~${co2SavedKg(option)} kg`} />
       </div>
+
+      {/* Itinerario con orari */}
+      <Timeline option={option} departureTime={departureTime} units={units} />
 
       {/* Costi */}
       <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-sm">
@@ -205,10 +230,26 @@ export default function ResultsPanel() {
           💾 Salva
         </button>
         <button
+          onClick={async () => {
+            const url = useStore.getState().shareUrl()
+            if (!url) return
+            try {
+              await navigator.clipboard.writeText(url)
+              setShareCopied(true)
+              setTimeout(() => setShareCopied(false), 2000)
+            } catch {
+              prompt('Copia il link del viaggio:', url)
+            }
+          }}
+          className="flex-1 border border-brand text-brand hover:bg-brand/5 rounded-lg py-2 text-sm font-medium"
+        >
+          {shareCopied ? '✓ Copiato!' : '🔗 Condividi'}
+        </button>
+        <button
           onClick={() => exportTripPdf({ planResult, option, vehicleName: planResult.vehicle?.name, units })}
           className="flex-1 bg-brand hover:bg-brand-dark text-white rounded-lg py-2 text-sm font-medium"
         >
-          📄 Esporta PDF
+          📄 PDF
         </button>
       </div>
     </div>
@@ -372,4 +413,69 @@ function fmtTime(min) {
   const h = Math.floor(m / 60)
   const r = m % 60
   return h > 0 ? `${h}h ${r}m` : `${r}m`
+}
+
+// CO₂ risparmiata rispetto a un'auto a benzina equivalente (~6.5 L/100km, 2.31 kg CO₂/L)
+// considerando le emissioni del mix elettrico europeo (~0.25 kg CO₂/kWh).
+function co2SavedKg(option) {
+  const petrol = option.distanceKm * 0.065 * 2.31
+  const ev = (option.energyKwh || 0) * 0.25
+  return Math.max(0, Math.round(petrol - ev))
+}
+
+function clockAt(base, minutes) {
+  const d = new Date(base.getTime() + minutes * 60000)
+  return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+}
+
+/** Itinerario con orari: partenza → soste (ricariche e riposi in ordine di km) → arrivo. */
+function Timeline({ option, departureTime, units }) {
+  const base = departureTime ? new Date(departureTime) : new Date()
+  if (Number.isNaN(base.getTime())) return null
+  const total = option.distanceKm || 1
+
+  // Eventi ordinati per posizione: ricariche (stops) + riposi (userStops).
+  const events = [
+    ...option.stops.map((s) => ({ kind: 'ricarica', alongKm: s.alongKm, dur: s.chargeMinutes, label: s.name, extra: `${Math.round(s.arriveSocPct)}→${Math.round(s.departSocPct)}%` })),
+    ...(option.userStops || [])
+      .filter((u) => u.type === 'riposo')
+      .map((u) => ({ kind: 'riposo', alongKm: u.alongKm, dur: u.durationMin, label: u.label || 'Pausa', extra: null })),
+  ].sort((a, b) => a.alongKm - b.alongKm)
+
+  let elapsed = 0
+  let prevKm = 0
+  let stopTime = 0
+  const rows = [{ time: clockAt(base, 0), icon: '🚗', text: 'Partenza', sub: null }]
+  for (const ev of events) {
+    const driveMin = option.drivingMinutes * ((ev.alongKm - prevKm) / total)
+    elapsed += driveMin
+    rows.push({
+      time: clockAt(base, elapsed + stopTime),
+      icon: ev.kind === 'ricarica' ? '⚡' : '☕',
+      text: `${ev.label}`.slice(0, 38),
+      sub: `${ev.kind === 'ricarica' ? 'ricarica' : 'pausa'} ${fmtTime(ev.dur)}${ev.extra ? ' · ' + ev.extra : ''} · ${fmtDistance(ev.alongKm, units)}`,
+    })
+    stopTime += ev.dur
+    prevKm = ev.alongKm
+  }
+  elapsed += option.drivingMinutes * ((total - prevKm) / total)
+  rows.push({ time: clockAt(base, elapsed + stopTime), icon: '🏁', text: 'Arrivo', sub: null })
+
+  return (
+    <div className="rounded-lg border border-slate-200 p-3">
+      <h4 className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Itinerario</h4>
+      <ol className="space-y-1.5">
+        {rows.map((r, i) => (
+          <li key={i} className="flex items-start gap-2 text-xs">
+            <span className="font-mono font-semibold text-slate-700 w-11 shrink-0">{r.time}</span>
+            <span className="shrink-0">{r.icon}</span>
+            <span>
+              <span className="text-slate-700">{r.text}</span>
+              {r.sub && <span className="text-slate-400"> — {r.sub}</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
 }
