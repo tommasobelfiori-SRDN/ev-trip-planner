@@ -56,6 +56,7 @@ model Trip {
   vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
   userId      String? // null = viaggio "ospite"; altrimenti proprietario
   user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anonId      String? // identificativo del browser ospite (cookie ev_anon): separa i viaggi degli anonimi
   prefs       String // JSON: { wTime, wCost, avoidTolls, avoidHighways, departSoc, arriveSoc, tempC }
   resultJson  String // JSON dell'ultimo risultato calcolato
   createdAt   DateTime @default(now())

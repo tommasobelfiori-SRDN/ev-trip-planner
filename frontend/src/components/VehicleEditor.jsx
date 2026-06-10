@@ -4,6 +4,36 @@ import { api } from '../api.js'
 
 const CONNECTORS = ['CCS', 'Type2', 'CHAdeMO']
 
+// Limiti accettati dal backend (devono combaciare con gli schemi di /api/vehicles).
+const BOUNDS = {
+  batteryKwh: [5, 300, 'Batteria'],
+  usableKwh: [5, 300, 'Batteria utilizzabile'],
+  consumptionWhKm: [50, 600, 'Consumo'],
+  maxChargeKw: [3, 1000, 'Potenza di ricarica'],
+  reserveSocPct: [0, 50, 'Riserva'],
+  defaultDepartSoc: [10, 100, 'SoC di partenza'],
+}
+
+function clampNum(v, [min, max]) {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return min
+  return Math.min(max, Math.max(min, n))
+}
+
+// Restituisce il primo errore di validazione (messaggio italiano), o null se tutto ok.
+function validateForm(form, curve) {
+  if (!form.name.trim()) return 'Inserisci un nome.'
+  if (form.name.trim().length > 80) return 'Il nome può avere al massimo 80 caratteri.'
+  for (const [key, [min, max, label]] of Object.entries(BOUNDS)) {
+    const v = Number(key === 'usableKwh' ? form[key] || form.batteryKwh : form[key])
+    if (!Number.isFinite(v) || v < min || v > max) return `${label}: inserisci un valore tra ${min} e ${max}.`
+  }
+  if (curve.length < 2) return 'La curva di ricarica deve avere almeno 2 punti.'
+  if (curve.some((p) => !(p.kw > 0 && p.kw <= 1000))) return 'Curva: la potenza deve essere tra 1 e 1000 kW.'
+  if (curve.some((p) => !(p.socPct >= 0 && p.socPct <= 100))) return 'Curva: la SoC deve essere tra 0 e 100%.'
+  return null
+}
+
 function defaultCurve(maxKw) {
   const k = Number(maxKw) || 120
   return [
@@ -23,13 +53,14 @@ export default function VehicleEditor() {
   const [form, setForm] = useState(() =>
     editingVehicle
       ? {
-          name: editingVehicle.name,
-          batteryKwh: editingVehicle.batteryKwh,
-          usableKwh: editingVehicle.usableKwh,
-          consumptionWhKm: editingVehicle.consumptionWhKm,
-          maxChargeKw: editingVehicle.maxChargeKw,
-          reserveSocPct: editingVehicle.reserveSocPct,
-          defaultDepartSoc: editingVehicle.defaultDepartSoc,
+          // clamp dei valori legacy nei limiti accettati dal backend
+          name: String(editingVehicle.name || '').slice(0, 80),
+          batteryKwh: clampNum(editingVehicle.batteryKwh, BOUNDS.batteryKwh),
+          usableKwh: clampNum(editingVehicle.usableKwh, BOUNDS.usableKwh),
+          consumptionWhKm: clampNum(editingVehicle.consumptionWhKm, BOUNDS.consumptionWhKm),
+          maxChargeKw: clampNum(editingVehicle.maxChargeKw, BOUNDS.maxChargeKw),
+          reserveSocPct: clampNum(editingVehicle.reserveSocPct, BOUNDS.reserveSocPct),
+          defaultDepartSoc: clampNum(editingVehicle.defaultDepartSoc, BOUNDS.defaultDepartSoc),
           connectors: editingVehicle.connectors,
           chargeCurve: editingVehicle.chargeCurve,
         }
@@ -75,13 +106,10 @@ export default function VehicleEditor() {
   }
 
   async function save() {
-    if (!form.name.trim()) {
-      setError('Inserisci un nome.')
-      return
-    }
     const curve = [...form.chargeCurve].map((p) => ({ socPct: Number(p.socPct), kw: Number(p.kw) }))
-    if (curve.length < 2 || curve.some((p) => !(p.kw > 0))) {
-      setError('La curva di ricarica deve avere almeno 2 punti con potenza > 0.')
+    const validationError = validateForm(form, curve)
+    if (validationError) {
+      setError(validationError)
       return
     }
     setSaving(true)

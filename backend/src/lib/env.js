@@ -24,6 +24,8 @@ if (existsSync(envPath)) {
 
 export const env = {
   PORT: Number(process.env.PORT || 5174),
+  // Dietro reverse proxy: TRUST_PROXY=true (o numero di hop) per risolvere il vero IP client.
+  TRUST_PROXY: process.env.TRUST_PROXY === 'true' ? true : Number(process.env.TRUST_PROXY) || false,
   DATABASE_URL: process.env.DATABASE_URL || 'file:./db/ev.sqlite',
   USER_AGENT: process.env.APP_USER_AGENT || 'EVTripPlanner/0.1',
   ORS_API_KEY: process.env.ORS_API_KEY || '',

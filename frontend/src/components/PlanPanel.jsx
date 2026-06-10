@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useStore } from '../store.js'
+import { useStore, MAX_STOPS } from '../store.js'
 import { api } from '../api.js'
 import { fmtTemp } from '../units.js'
 
@@ -165,9 +165,13 @@ export default function PlanPanel() {
         </div>
       ))}
 
-      <button type="button" onClick={addStop} className="text-xs text-brand hover:underline -mt-1">
-        + Aggiungi sosta
-      </button>
+      {stops.length < MAX_STOPS ? (
+        <button type="button" onClick={addStop} className="text-xs text-brand hover:underline -mt-1">
+          + Aggiungi sosta
+        </button>
+      ) : (
+        <p className="text-[11px] text-slate-400 -mt-1">Massimo {MAX_STOPS} soste per viaggio.</p>
+      )}
 
       <AddressInput label="Arrivo" value={dest} onPick={setDest} placeholder="Es. Monaco di Baviera" />
 

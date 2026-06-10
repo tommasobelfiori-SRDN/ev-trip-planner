@@ -1,20 +1,50 @@
 import { prisma } from '../lib/prisma.js'
 import { listVehicles, parseVehicle } from '../lib/vehicle.js'
 
+// Specifiche del veicolo entro limiti fisicamente sensati.
+const VEHICLE_PROPS = {
+  name: { type: 'string', minLength: 1, maxLength: 80 },
+  batteryKwh: { type: 'number', minimum: 5, maximum: 300 },
+  usableKwh: { type: 'number', minimum: 5, maximum: 300 },
+  consumptionWhKm: { type: 'number', minimum: 50, maximum: 600 },
+  maxChargeKw: { type: 'number', minimum: 3, maximum: 1000 },
+  reserveSocPct: { type: 'number', minimum: 0, maximum: 50 },
+  defaultDepartSoc: { type: 'number', minimum: 10, maximum: 100 },
+  connectors: { type: 'array', maxItems: 5, items: { type: 'string', enum: ['CCS', 'Type2', 'CHAdeMO'] } },
+  chargeCurve: {
+    type: 'array',
+    maxItems: 40,
+    items: {
+      type: 'object',
+      required: ['socPct', 'kw'],
+      properties: {
+        socPct: { type: 'number', minimum: 0, maximum: 100 },
+        kw: { type: 'number', exclusiveMinimum: 0, maximum: 1000 },
+      },
+    },
+  },
+}
+
+const CREATE_SCHEMA = {
+  body: {
+    type: 'object',
+    required: ['name', 'batteryKwh', 'consumptionWhKm', 'maxChargeKw'],
+    properties: VEHICLE_PROPS,
+  },
+}
+const UPDATE_SCHEMA = {
+  params: { type: 'object', properties: { id: { type: 'string', maxLength: 64 } } },
+  body: { type: 'object', properties: VEHICLE_PROPS },
+}
+const ID_SCHEMA = { params: UPDATE_SCHEMA.params }
+
 export default async function vehicleRoutes(app) {
   app.get('/api/vehicles', async (req) => {
     return { vehicles: await listVehicles(req.userId) }
   })
 
-  app.post('/api/vehicles', async (req, reply) => {
-    const b = req.body || {}
-    const required = ['name', 'batteryKwh', 'consumptionWhKm', 'maxChargeKw']
-    for (const f of required) {
-      if (b[f] === undefined || b[f] === null || b[f] === '') {
-        reply.code(400)
-        return { error: `Campo obbligatorio mancante: ${f}` }
-      }
-    }
+  app.post('/api/vehicles', { schema: CREATE_SCHEMA }, async (req, reply) => {
+    const b = req.body
     const batteryKwh = Number(b.batteryKwh)
     const usableKwh = Number(b.usableKwh || b.batteryKwh)
     const connectors = Array.isArray(b.connectors) && b.connectors.length ? b.connectors : ['CCS', 'Type2']
@@ -42,7 +72,7 @@ export default async function vehicleRoutes(app) {
     return { vehicle: parseVehicle(row) }
   })
 
-  app.put('/api/vehicles/:id', async (req, reply) => {
+  app.put('/api/vehicles/:id', { schema: UPDATE_SCHEMA }, async (req, reply) => {
     const row = await prisma.vehicle.findUnique({ where: { id: req.params.id } })
     if (!row) {
       reply.code(404)
@@ -79,7 +109,7 @@ export default async function vehicleRoutes(app) {
     return { vehicle: parseVehicle(updated) }
   })
 
-  app.delete('/api/vehicles/:id', async (req, reply) => {
+  app.delete('/api/vehicles/:id', { schema: ID_SCHEMA }, async (req, reply) => {
     const row = await prisma.vehicle.findUnique({ where: { id: req.params.id } })
     if (!row) {
       reply.code(404)

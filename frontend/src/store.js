@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { api } from './api.js'
 
+export const MAX_STOPS = 10 // stesso tetto dello schema backend (/api/plan stops maxItems)
+
 const DEFAULT_UNITS = { distance: 'km', temp: 'C', consumption: 'whkm' }
 function loadSettings() {
   try {
@@ -102,8 +104,10 @@ export const useStore = create((set, get) => ({
 
   setOrigin: (origin) => set({ origin }),
   setDest: (dest) => set({ dest }),
-  addStop: () =>
-    set({ stops: [...get().stops, { type: 'passaggio', durationMin: 30, targetSocPct: 80, label: '', lat: null, lng: null }] }),
+  addStop: () => {
+    if (get().stops.length >= MAX_STOPS) return // limite allineato allo schema del backend
+    set({ stops: [...get().stops, { type: 'passaggio', durationMin: 30, targetSocPct: 80, label: '', lat: null, lng: null }] })
+  },
   setStopLocation: (i, point) =>
     set({ stops: get().stops.map((s, idx) => (idx === i ? { ...s, ...point } : s)) }),
   setStopType: (i, type) => set({ stops: get().stops.map((s, idx) => (idx === i ? { ...s, type } : s)) }),

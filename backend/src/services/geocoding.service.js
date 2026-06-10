@@ -21,7 +21,8 @@ export async function geocode(query) {
     url.searchParams.set('accept-language', 'it')
     const rows = await fetchJson(url.toString())
     return rows.map((r) => ({
-      label: r.display_name,
+      // troncata a 300: gli schemi di /api/plan e /api/trips accettano label fino a 300 caratteri
+      label: String(r.display_name || '').slice(0, 300),
       lat: Number(r.lat),
       lng: Number(r.lon),
       type: r.type,

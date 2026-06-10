@@ -13,9 +13,16 @@ async function withTimeout(url, options, timeoutMs) {
   }
 }
 
+// Messaggio d'errore leggibile: combina error + detail del backend (es. validazione schema).
+async function errorMessage(res) {
+  const j = await res.json().catch(() => ({}))
+  if (j.error && j.detail) return `${j.error}: ${j.detail}`
+  return j.error || `HTTP ${res.status}`
+}
+
 async function jget(url, timeoutMs = 20000) {
   const res = await withTimeout(url, {}, timeoutMs)
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`)
+  if (!res.ok) throw new Error(await errorMessage(res))
   return res.json()
 }
 async function jpost(url, body, timeoutMs = 30000) {
@@ -24,7 +31,7 @@ async function jpost(url, body, timeoutMs = 30000) {
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
     timeoutMs
   )
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`)
+  if (!res.ok) throw new Error(await errorMessage(res))
   return res.json()
 }
 
@@ -40,7 +47,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(v),
     }).then(async (r) => {
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`)
+      if (!r.ok) throw new Error(await errorMessage(r))
       return r.json()
     }),
   deleteVehicle: (id) => fetch(`/api/vehicles/${id}`, { method: 'DELETE' }).then((r) => r.json()),

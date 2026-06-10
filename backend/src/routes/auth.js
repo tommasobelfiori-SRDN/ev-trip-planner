@@ -10,8 +10,36 @@ import {
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
+// Schema severo SOLO in registrazione (definisce i requisiti delle nuove credenziali).
+const REGISTER_SCHEMA = {
+  body: {
+    type: 'object',
+    required: ['email', 'password'],
+    properties: {
+      email: { type: 'string', minLength: 5, maxLength: 254, pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$' },
+      password: { type: 'string', minLength: 6, maxLength: 200 },
+    },
+  },
+}
+
+// Login permissivo: non deve mai respingere credenziali esistenti per un limite introdotto dopo.
+// (Anti-DoS già garantito da bodyLimit e rate limit.)
+const LOGIN_SCHEMA = {
+  body: {
+    type: 'object',
+    required: ['email', 'password'],
+    properties: {
+      email: { type: 'string', minLength: 1, maxLength: 254 },
+      password: { type: 'string', minLength: 1, maxLength: 1024 },
+    },
+  },
+}
+
+// Limite più severo sui tentativi di accesso (anti brute-force).
+const AUTH_RATE = { rateLimit: { max: 10, timeWindow: '1 minute' } }
+
 export default async function authRoutes(app) {
-  app.post('/api/auth/register', async (req, reply) => {
+  app.post('/api/auth/register', { schema: REGISTER_SCHEMA, config: AUTH_RATE }, async (req, reply) => {
     const { email, password } = req.body || {}
     if (!EMAIL_RE.test(email || '')) {
       reply.code(400)
@@ -35,7 +63,7 @@ export default async function authRoutes(app) {
     return { user: { id: user.id, email: user.email } }
   })
 
-  app.post('/api/auth/login', async (req, reply) => {
+  app.post('/api/auth/login', { schema: LOGIN_SCHEMA, config: AUTH_RATE }, async (req, reply) => {
     const { email, password } = req.body || {}
     const user = await prisma.user.findUnique({ where: { email: (email || '').toLowerCase() } })
     if (!user || !verifyPassword(password || '', user.passwordHash)) {
