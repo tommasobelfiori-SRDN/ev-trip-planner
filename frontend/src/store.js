@@ -57,7 +57,7 @@ export const useStore = create((set, get) => ({
   poiFilter: { food: true, services: true },
 
   // azioni
-  async init() {
+  async init(attempt = 0) {
     try {
       const [{ vehicles }, health, me, prices] = await Promise.all([
         api.vehicles(),
@@ -68,14 +68,23 @@ export const useStore = create((set, get) => ({
       set({
         vehicles,
         health,
+        error: null, // recupero riuscito: pulisci l'eventuale "backend non raggiungibile"
         user: me.user,
         operators: prices.operators || [],
         selectedVehicleId: get().selectedVehicleId || vehicles[0]?.id || null,
       })
       // Viaggio condiviso via link (?trip=...): ripristina e pianifica subito.
       get().restoreFromUrl()
-    } catch (e) {
-      set({ error: e.message })
+    } catch {
+      // Backend giù (o non ancora partito): messaggio chiaro + riconnessione automatica,
+      // così quando il server si avvia l'app si riprende da sola senza ricaricare.
+      const MAX_RETRY = 20
+      if (attempt < MAX_RETRY) {
+        set({ error: '⏳ Backend non raggiungibile: riprovo automaticamente… (se non è avviato: `npm run dev` nella cartella del progetto)' })
+        setTimeout(() => get().init(attempt + 1), 3000)
+      } else {
+        set({ error: '❌ Backend non raggiungibile. Avvialo con `npm run dev` nella cartella del progetto, poi ricarica la pagina.' })
+      }
     }
   },
 
