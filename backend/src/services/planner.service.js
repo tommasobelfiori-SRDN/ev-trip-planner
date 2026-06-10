@@ -95,14 +95,19 @@ export async function planTrip(params) {
   }
 
   // 2) Dati per la geometria base. Le barriere di pedaggio (riferimenti tipo "Barriera di
-  //    Rondissone") si cercano IN PARALLELO: utili ma non bloccanti.
+  //    Rondissone") si cercano IN PARALLELO: utili ma non bloccanti. null = servizio fallito
+  //    (≠ lista vuota): in quel caso avvisiamo l'utente invece di tacere.
   const boothsPromise = withTimeout(
-    tollBoothsAlongRoute(baseRoute.points).catch(() => []),
+    tollBoothsAlongRoute(baseRoute.points).catch(() => null),
     15000,
-    []
+    null
   )
   const ctxBase = await gatherForRoute(baseRoute, params)
-  const tollBooths = await boothsPromise
+  const boothsResult = await boothsPromise
+  const tollBooths = boothsResult || []
+  if (boothsResult === null) {
+    warnings.push('Elenco caselli/barriere non disponibile al momento (servizio mappe occupato): riprova tra poco.')
+  }
 
   // 3) I POI NON vengono calcolati qui: sono lenti (Overpass) e bloccherebbero la risposta.
   //    Il frontend li carica a parte via POST /api/pois dopo aver mostrato il percorso.

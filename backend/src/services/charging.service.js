@@ -47,9 +47,13 @@ export async function stationsNearRoute(points, opts = {}) {
     if (seg.length >= 2) segments.push(seg)
   }
   if (segments.length === 0) segments.push(points)
+  // Sulle tratte lunghissime RAGGRUPPA le finestre (mai scartarle: si creerebbero
+  // "deserti" di colonnine a metà percorso).
   if (segments.length > MAX_WINDOWS) {
-    const step = Math.ceil(segments.length / MAX_WINDOWS)
-    segments = segments.filter((_, i) => i % step === 0)
+    const groupSize = Math.ceil(segments.length / MAX_WINDOWS)
+    const grouped = []
+    for (let i = 0; i < segments.length; i += groupSize) grouped.push(segments.slice(i, i + groupSize).flat())
+    segments = grouped
   }
   const bboxes = segments.map((seg) => corridorBbox(seg, Math.max(corridorKm, 6)))
 

@@ -26,3 +26,12 @@ test('portali free-flow marcati come "portale"', () => {
   const out = dedupeBooths([{ name: 'Portale A33', lat: 44.6, lng: 7.9, alongKm: 55, gantry: true }])
   assert.equal(out[0].type, 'portale')
 })
+
+test('varianti di trattini/accenti e impianti sovrapposti (<400 m) -> uno solo', () => {
+  const out = dedupeBooths([
+    { name: 'Saint-Michel-Echangeur', lat: 45.2, lng: 6.47, alongKm: 122.0, gantry: false },
+    { name: 'Saint Michel Echangeur', lat: 45.2, lng: 6.47, alongKm: 122.05, gantry: false },
+    { name: 'Péage de Saint-Michel-de-Maurienne', lat: 45.2, lng: 6.471, alongKm: 122.1, gantry: false },
+  ])
+  assert.equal(out.length, 1)
+})
