@@ -1,17 +1,28 @@
 import pLimit from 'p-limit'
 import { env } from './env.js'
 
-// Limitatori di concorrenza per host, per rispettare le policy d'uso (es. Nominatim: 1 req/s).
+// Limitatori di concorrenza per host, per rispettare le policy d'uso.
+// Nominatim: 1 req/s. Overpass: ~2 connessioni per IP (le query a finestre girano in coppia;
+// serializzarle a 1 con pausa fa scadere i timeout per-zona mentre sono ancora in coda).
+const HOST_CONCURRENCY = {
+  'overpass-api.de': 2,
+  'overpass.kumi.systems': 2,
+  'overpass.private.coffee': 2,
+}
 const limiters = new Map()
 function limiterFor(host) {
-  if (!limiters.has(host)) limiters.set(host, pLimit(1))
+  if (!limiters.has(host)) limiters.set(host, pLimit(HOST_CONCURRENCY[host] || 1))
   return limiters.get(host)
 }
 
-// Ritardo minimo tra richieste allo stesso host (ms). Nominatim/Overpass sono i più sensibili.
+// Ritardo minimo tra richieste allo stesso host (ms). Nominatim è il più sensibile;
+// per Overpass un piccolo distanziamento evita le raffiche che fanno scattare il
+// blocco per IP (le colonnine usano comunque 1 sola richiesta per viaggio).
 const MIN_GAP_MS = {
   'nominatim.openstreetmap.org': 1100,
-  'overpass-api.de': 1100,
+  'overpass-api.de': 400,
+  'overpass.private.coffee': 400,
+  'overpass.kumi.systems': 400,
 }
 const lastCall = new Map()
 

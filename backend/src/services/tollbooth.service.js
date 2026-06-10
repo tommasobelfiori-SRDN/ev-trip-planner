@@ -43,10 +43,12 @@ export async function tollBoothsAlongRoute(points) {
     blocks.push(`node["highway"="toll_gantry"](${bb});`)
   }
   // cap alto: una singola barriera può avere 20+ nodi (uno per corsia)
-  const query = `[out:json][timeout:40];(${blocks.join('')});out center tags 6000;`
+  const query = `[out:json][timeout:12];(${blocks.join('')});out center tags 6000;`
   const key = `tollbooth:${hashStr(blocks.join('|'))}`
   const elements = await cached(key, 60 * 60 * 24 * 14, async () => {
-    const data = await overpassFetch(query)
+    // 12s allineati al [timeout:12] della query e dentro i 15s del planner; un solo giro
+    // (il fallback su un endpoint appeso non deve sforare il tetto)
+    const data = await overpassFetch(query, { timeoutMs: 12000, attempts: 1 })
     return (data.elements || []).map((el) => ({
       name: el.tags?.name || el.tags?.['name:it'] || null,
       lat: el.lat ?? el.center?.lat,

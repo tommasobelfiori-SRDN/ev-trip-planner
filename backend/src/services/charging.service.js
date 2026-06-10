@@ -1,11 +1,14 @@
 import { env } from '../lib/env.js'
 import { fetchJson } from '../lib/http.js'
-import { cached } from '../lib/cache.js'
+import { cached, cacheGet, cacheSet } from '../lib/cache.js'
 import { cumulativeKm, corridorBbox, nearestOnPath } from '../lib/geo.js'
 import { stationMatchesNetworks } from './pricing.service.js'
 
-const WINDOW_KM = 80 // finestre lungo il percorso per le query stazioni
-const MAX_WINDOWS = 18
+// Finestre lungo il percorso per le query stazioni. PICCOLE apposta: una finestra da 80 km
+// che attraversa una metropoli copre l'intera città e Overpass la uccide con 504; a 40 km
+// ogni query resta leggera (<2s) e i fallimenti diventano rari.
+const WINDOW_KM = 40
+const MAX_WINDOWS = 30
 
 // Parole chiave per riconoscere il tipo di connettore dal titolo.
 const CONNECTOR_KEYWORDS = {
@@ -57,7 +60,7 @@ export async function stationsNearRoute(points, opts = {}) {
   }
   const bboxes = segments.map((seg) => corridorBbox(seg, Math.max(corridorKm, 6)))
 
-  const raw = useOCM() ? await fetchOcmAll(bboxes) : await fetchOsmAll(bboxes)
+  const { stations: raw, failedZones, totalZones } = useOCM() ? await fetchOcmAll(bboxes) : await fetchOsmAll(bboxes)
 
   // Filtra per connettore/potenza/corridoio e arricchisci con posizione lungo il percorso.
   const byId = new Map()
@@ -95,27 +98,28 @@ export async function stationsNearRoute(points, opts = {}) {
     })
   }
   result.sort((a, b) => a.alongKm - b.alongKm)
-  return result
+  // partial=true: alcune zone non hanno risposto -> il chiamante può avvisare l'utente
+  // invece di concludere "nessuna colonnina" / "tratta non percorribile".
+  return { stations: result, partial: failedZones > 0, failedZones, totalZones }
 }
 
 // ---------- Provider: Open Charge Map ----------
 async function fetchOcmAll(bboxes) {
-  const out = []
+  const stations = []
+  let failedZones = 0
   for (const bbox of bboxes) {
-    let rows
     try {
-      rows = await fetchOcmBbox(bbox)
+      stations.push(...(await fetchOcmBbox(bbox)))
     } catch (e) {
       if (e.status === 403) {
         throw new Error(
           'Open Charge Map richiede una chiave API valida (OCM_API_KEY). Rimuovila per usare OpenStreetMap senza chiave.'
         )
       }
-      throw e
+      failedZones++ // zona saltata: risultato parziale, non tutto-o-niente
     }
-    out.push(...rows)
   }
-  return out
+  return { stations, failedZones, totalZones: bboxes.length }
 }
 
 async function fetchOcmBbox(bbox) {
@@ -153,21 +157,178 @@ function ocmLevelToKw(levelId) {
 }
 
 // ---------- Provider: OpenStreetMap (Overpass, senza chiave) ----------
-// UNA sola query (veloce: ~10-15s anche su 1000+ km, niente serializzazione) con cap molto alto
-// così non si troncano le colonnine rapide. La densità di charging_station è bassa: gestibile.
-async function fetchOsmAll(bboxes) {
-  const blocks = []
-  for (const bbox of bboxes) {
-    const [s, w, n, e] = bbox
-    const bb = `${s.toFixed(4)},${w.toFixed(4)},${n.toFixed(4)},${e.toFixed(4)}`
-    blocks.push(`node["amenity"="charging_station"](${bb});`)
-    blocks.push(`way["amenity"="charging_station"](${bb});`)
+// Una query PICCOLA per ogni finestra del percorso invece di un'unica mega-query:
+// - se UNA zona va in timeout si perdono solo le sue colonnine (risultato PARZIALE, mai vuoto)
+// - le bbox sono agganciate a una griglia -> percorsi simili riusano la cache della stessa zona
+// - le zone girano in parallelo (3 alla volta, etiquette Overpass) con tetto di tempo ciascuna
+const ZONE_SNAP = 0.02 // griglia ~2 km: stessa chiave cache tra percorsi vicini
+const FLEET_BUDGET_MS = 32000 // tempo massimo per la query a Overpass: poi parziale + refill
+
+export function snapBbox([s, w, n, e]) {
+  const down = (v) => Math.floor(v / ZONE_SNAP) * ZONE_SNAP
+  const up = (v) => Math.ceil(v / ZONE_SNAP) * ZONE_SNAP
+  return [down(s), down(w), up(n), up(e)]
+}
+
+const ZONE_TTL_S = 60 * 60 * 24 * 3
+const zoneKey = (bb) => `cs-osm-z:${bb}`
+const zoneQuery = (bb) =>
+  `[out:json][timeout:15];(node["amenity"="charging_station"](${bb});way["amenity"="charging_station"](${bb}););out center 6000;`
+
+// Una stazione appartiene a una zona se cade nella sua bbox (bordo incluso).
+function inBbox(st, [s, w, n, e]) {
+  return st.lat >= s && st.lat <= n && st.lng >= w && st.lng <= e
+}
+
+// --- Circuit breaker SOLO per gli endpoint di riserva: a volte sono appesi (nessuna
+// risposta) e senza breaker ogni zona pagherebbe il loro timeout pieno.
+// L'endpoint PRINCIPALE non va mai in castigo: i suoi 429/504 durano pochi secondi,
+// e metterlo in cooldown quando i backup sono giù significherebbe perdere tutto.
+const BACKUP_ENDPOINTS = [
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+]
+const EP_COOLDOWN_MS = 60000
+const epState = new Map() // ep -> { fails, until }
+function epAvailable(ep) {
+  const s = epState.get(ep)
+  return !s || !s.until || s.until < Date.now()
+}
+function epReport(ep, ok) {
+  if (ok) {
+    epState.delete(ep)
+    return
   }
-  const query = `[out:json][timeout:60];(${blocks.join('')});out center 8000;`
-  const key = `cs-osm:${hashStr(blocks.join('|'))}`
-  return cached(key, 60 * 60 * 24 * 3, async () => {
-    const data = await overpassFetch(query)
+  const s = epState.get(ep) || { fails: 0, until: 0 }
+  s.fails++
+  if (s.fails >= 2) s.until = Date.now() + EP_COOLDOWN_MS
+  epState.set(ep, s)
+}
+
+function overpassPost(ep, query, timeoutMs = 9000) {
+  return fetchJson(ep, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `data=${encodeURIComponent(query)}`,
+    timeoutMs,
+  })
+}
+
+// Fetch Overpass: principale (con UNA ripetizione dopo pausa breve: i 429 rientrano
+// in pochi secondi), poi i backup ancora vivi.
+async function overpassZoneFetch(query, timeoutMs = 9000) {
+  let lastErr
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await overpassPost(env.OVERPASS_URL, query, timeoutMs)
+    } catch (e) {
+      lastErr = e
+      if (attempt === 0) await new Promise((r) => setTimeout(r, 2500))
+    }
+  }
+  for (const ep of BACKUP_ENDPOINTS) {
+    if (!epAvailable(ep)) continue
+    try {
+      const data = await overpassPost(ep, query, timeoutMs)
+      epReport(ep, true)
+      return data
+    } catch (e) {
+      epReport(ep, false)
+      lastErr = e
+    }
+  }
+  throw lastErr || new Error('nessun endpoint Overpass disponibile')
+}
+
+async function fetchZoneCached(bb) {
+  return cached(zoneKey(bb), ZONE_TTL_S, async () => {
+    const data = await overpassZoneFetch(zoneQuery(bb))
     return (data.elements || []).map(parseOsmStation).filter(Boolean)
+  })
+}
+
+// UNA query per tutte le zone mancanti insieme (il modo più gentile di usare Overpass:
+// 1 richiesta per viaggio, non 1 per zona — il rate-limit per IP scatta sul NUMERO di
+// richieste). Il risultato viene decomposto e salvato PER ZONA, così i viaggi futuri
+// che passano dalle stesse zone non fanno alcuna richiesta.
+async function fetchMissingZonesTogether(missingBbs) {
+  const blocks = missingBbs
+    .map((bb) => `node["amenity"="charging_station"](${bb});way["amenity"="charging_station"](${bb});`)
+    .join('')
+  const query = `[out:json][timeout:60];(${blocks});out center 8000;`
+  const data = await overpassZoneFetch(query, 30000)
+  const stations = (data.elements || []).map(parseOsmStation).filter(Boolean)
+  // decomponi per zona e salva anche le zone VUOTE (per non rifare la query)
+  await Promise.all(
+    missingBbs.map((bb) => {
+      const zone = bb.split(',').map(Number)
+      const inZone = stations.filter((st) => inBbox(st, zone))
+      return cacheSet(zoneKey(bb), inZone, ZONE_TTL_S).catch(() => {})
+    })
+  )
+  return stations
+}
+
+// --- Ricarica in background delle zone fallite: i 429/504 di Overpass sono transitori,
+// quindi riprovare dopo qualche secondo di solito riesce. Così "riprova tra poco" è VERO:
+// alla ripianificazione successiva le zone mancanti sono già in cache.
+const refillInFlight = new Set()
+function scheduleZoneRefill(bb, attempt = 0, staggerMs = 0) {
+  const delays = [5000, 15000, 35000, 80000]
+  if (refillInFlight.has(bb) || attempt >= delays.length) return
+  refillInFlight.add(bb)
+  // staggerMs scagliona i refill di zone diverse: mai un'altra raffica verso Overpass
+  const t = setTimeout(async () => {
+    try {
+      await fetchZoneCached(bb)
+      refillInFlight.delete(bb)
+    } catch {
+      refillInFlight.delete(bb)
+      scheduleZoneRefill(bb, attempt + 1, staggerMs)
+    }
+  }, delays[attempt] + staggerMs)
+  t.unref?.() // non tenere vivo il processo per i refill
+}
+
+async function fetchOsmAll(bboxes) {
+  const bbs = bboxes.map((b) => snapBbox(b).map((v) => v.toFixed(2)).join(','))
+
+  // 1) Cache per zona: spesso copre tutto (0 richieste a Overpass).
+  const cachedZones = await Promise.all(bbs.map((bb) => cacheGet(zoneKey(bb)).catch(() => null)))
+  const stations = []
+  const missing = []
+  cachedZones.forEach((hit, i) => {
+    if (hit !== null) stations.push(...hit)
+    else missing.push(bbs[i])
+  })
+
+  if (missing.length === 0) return { stations, failedZones: 0, totalZones: bbs.length }
+
+  // 2) UNA sola richiesta per tutte le zone mancanti (gentile col rate-limit per IP).
+  //    In caso di fallimento: risultato parziale + ricarica in background zona per zona.
+  const outcome = await promiseOutcome(fetchMissingZonesTogether(missing), FLEET_BUDGET_MS)
+  if (outcome.ok) {
+    stations.push(...outcome.value)
+    return { stations, failedZones: 0, totalZones: bbs.length }
+  }
+  missing.forEach((bb, i) => scheduleZoneRefill(bb, 0, i * 2500))
+  return { stations, failedZones: missing.length, totalZones: bbs.length }
+}
+
+/** Risolve sempre con { ok, value | error }: un fallimento/timeout non propaga rejection. */
+function promiseOutcome(promise, ms) {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve({ ok: false, error: new Error('timeout zona') }), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(t)
+        resolve({ ok: true, value })
+      },
+      (error) => {
+        clearTimeout(t)
+        resolve({ ok: false, error })
+      }
+    )
   })
 }
 
@@ -270,18 +431,20 @@ function parseKw(str) {
   return Math.round(v)
 }
 
-export async function overpassFetch(query) {
+export async function overpassFetch(query, opts = {}) {
+  const attempts = opts.attempts ?? 3
+  const timeoutMs = opts.timeoutMs ?? 35000 // > tempo tipico, < timeout server
   const endpoints = [env.OVERPASS_URL, 'https://overpass.kumi.systems/api/interpreter']
   let lastErr
   // Più tentativi con backoff: la copertura colonnine dev'essere COMPLETA (un buco = sosta mancante).
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     for (const ep of endpoints) {
       try {
         return await fetchJson(ep, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: `data=${encodeURIComponent(query)}`,
-          timeoutMs: 35000, // > tempo tipico (~12-15s), < timeout server [timeout:60]
+          timeoutMs,
         })
       } catch (e) {
         lastErr = e

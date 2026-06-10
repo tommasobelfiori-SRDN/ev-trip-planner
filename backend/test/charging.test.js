@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseOsmStation } from '../src/services/charging.service.js'
+import { parseOsmStation, snapBbox } from '../src/services/charging.service.js'
 
 const base = (tags) => ({ type: 'node', id: 1, lat: 45.0, lon: 9.0, tags })
 
@@ -53,6 +53,17 @@ test('senza socket dichiarati: inferenza da maxpower (>=43 kW -> CCS DC)', () =>
   assert.equal(fast.dc, true)
   const slow = parseOsmStation(base({ amenity: 'charging_station' }))
   assert.equal(slow.dc, false) // assunzione prudente: AC 22 kW
+})
+
+test('snapBbox: aggancia alla griglia SEMPRE verso l\'esterno (mai restringere l\'area)', () => {
+  const [s, w, n, e] = snapBbox([45.4631, 9.1772, 45.5119, 9.2458])
+  assert.ok(s <= 45.4631 && w <= 9.1772, 'sud/ovest arrotondati verso il basso')
+  assert.ok(n >= 45.5119 && e >= 9.2458, 'nord/est arrotondati verso l\'alto')
+  // stessa zona -> stessa chiave cache anche per percorsi leggermente diversi
+  assert.deepEqual(snapBbox([45.4635, 9.1775, 45.5115, 9.2455]), [s, w, n, e])
+  // longitudini negative (ovest di Greenwich) gestite correttamente
+  const [s2, w2] = snapBbox([-1.013, -0.013, 0.5, 0.5])
+  assert.ok(s2 <= -1.013 && w2 <= -0.013)
 })
 
 test('rete DC nota senza tag socket -> DC con potenza tipica della rete', () => {

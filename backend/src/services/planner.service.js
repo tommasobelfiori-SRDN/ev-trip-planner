@@ -131,7 +131,7 @@ export async function planTrip(params) {
           minPowerKw: 0,
           corridorKm: params.corridorKm ?? 5,
           networks: params.networks || [],
-        }),
+        }).then((r) => r.stations),
         12000,
         ctxBase.stations
       )
@@ -220,6 +220,8 @@ async function gatherForRoute(routeResult, params) {
   })
 
   // Stazioni (OSM/OCM) e pedaggi (Nominatim) usano host diversi: lanciali in PARALLELO, con tetto di tempo.
+  // Le zone falliscono singolarmente (risultato parziale): distinguiamo "tutto perso" (errore
+  // bloccante) da "alcune zone mancanti" (avviso non bloccante, il piano si fa comunque).
   const stationsP = withTimeout(
     stationsNearRoute(routeResult.points, {
       connectors: params.vehicle.connectors,
@@ -227,10 +229,20 @@ async function gatherForRoute(routeResult, params) {
       corridorKm: params.corridorKm ?? 5,
       networks: params.networks || [],
     })
-      .then((stations) => ({ stations, stationError: null }))
-      .catch((e) => ({ stations: [], stationError: e.message })),
-    24000,
-    { stations: [], stationError: 'Stazioni non disponibili (timeout). Riprova tra poco.' }
+      .then((r) => ({
+        stations: r.stations,
+        stationError:
+          r.partial && r.stations.length === 0
+            ? 'Colonnine non disponibili al momento (servizio mappe saturo). Riprova tra qualche istante.'
+            : null,
+        stationWarning:
+          r.partial && r.stations.length > 0
+            ? `Colonnine caricate parzialmente (${r.failedZones} ${r.failedZones === 1 ? 'zona' : 'zone'} su ${r.totalZones} momentaneamente non disponibili): alcune stazioni potrebbero mancare, riprova tra poco per il piano completo.`
+            : null,
+      }))
+      .catch((e) => ({ stations: [], stationError: e.message, stationWarning: null })),
+    35000,
+    { stations: [], stationError: 'Stazioni non disponibili (timeout). Riprova tra poco.', stationWarning: null }
   )
   const tollP = withTimeout(
     estimateToll(routeResult.points, {
@@ -253,7 +265,13 @@ async function gatherForRoute(routeResult, params) {
   )
 
   const [stRes, toll] = await Promise.all([stationsP, tollP])
-  return { consumption, stations: stRes.stations, stationError: stRes.stationError, toll }
+  return {
+    consumption,
+    stations: stRes.stations,
+    stationError: stRes.stationError,
+    stationWarning: stRes.stationWarning,
+    toll,
+  }
 }
 
 function buildOption(mode, routeResult, ctx, params) {
@@ -277,6 +295,7 @@ function buildOption(mode, routeResult, ctx, params) {
 
   const warnings = []
   if (ctx.stationError) warnings.push(ctx.stationError)
+  if (ctx.stationWarning) warnings.push(ctx.stationWarning)
   if (!planning.feasible) warnings.push(planning.reason)
 
   // Marker tappe/riposi sul grafico SoC (proiettati sul percorso). Le ricariche sono già in stops.

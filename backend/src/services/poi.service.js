@@ -5,7 +5,7 @@ import { cumulativeKm, corridorBbox, nearestOnPath } from '../lib/geo.js'
 
 const WINDOW_KM = 60 // sotto-riquadri lungo il percorso: bbox piccoli = indice spaziale veloce
 const MAX_WINDOWS = 18 // tetto di sicurezza per tratte molto lunghe
-const PER_REQUEST_TIMEOUT_MS = 25000
+const PER_REQUEST_TIMEOUT_MS = 10000 // corto: un endpoint appeso non deve bloccare i POI a lungo
 
 // Categorie POI -> tag OSM e tipi di elemento. (Carburanti rimossi: inutili per un'auto elettrica.)
 const CATEGORIES = {
