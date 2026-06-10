@@ -4,6 +4,7 @@ import { estimateToll } from './toll.service.js'
 import { estimateConsumption, chargeTimeMinutes } from './consumption.service.js'
 import { priceForOperator, HOME_PRICE } from './pricing.service.js'
 import { addElevation, routeTemperature } from './openmeteo.service.js'
+import { tollBoothsAlongRoute } from './tollbooth.service.js'
 import { haversineKm, cumulativeKm, nearestOnPath } from '../lib/geo.js'
 import { appsForOperators } from './apps.service.js'
 
@@ -93,8 +94,15 @@ export async function planTrip(params) {
     }
   }
 
-  // 2) Dati per la geometria base.
+  // 2) Dati per la geometria base. Le barriere di pedaggio (riferimenti tipo "Barriera di
+  //    Rondissone") si cercano IN PARALLELO: utili ma non bloccanti.
+  const boothsPromise = withTimeout(
+    tollBoothsAlongRoute(baseRoute.points).catch(() => []),
+    15000,
+    []
+  )
   const ctxBase = await gatherForRoute(baseRoute, params)
+  const tollBooths = await boothsPromise
 
   // 3) I POI NON vengono calcolati qui: sono lenti (Overpass) e bloccherebbero la risposta.
   //    Il frontend li carica a parte via POST /api/pois dopo aver mostrato il percorso.
@@ -187,6 +195,7 @@ export async function planTrip(params) {
     provider: baseRoute.provider,
     options,
     stations,
+    tollBooths,
     weather: weather ? { tempC: weather.tempC, source: 'open-meteo' } : null,
     elevation: !!baseRoute.hasElevation,
     pois: [], // caricati separatamente dal frontend (/api/pois)

@@ -302,6 +302,31 @@ export function buildTripDoc({ planResult, option, vehicleName, units, timeline 
     }
   }
 
+  // --- Caselli e barriere di riferimento ---
+  const booths = planResult?.tollBooths || []
+  if (booths.length) {
+    sectionTitle('Caselli e barriere sul percorso')
+    doc.setFontSize(8)
+    const shown = booths.slice(0, 16)
+    for (const b of shown) {
+      ensure(5)
+      doc.setTextColor(...SLATE)
+      doc.setFont('helvetica', 'bold')
+      text(`km ${b.alongKm}`, M, y)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...DARK)
+      text(`${b.name}${b.type === 'portale' ? '  (portale free-flow)' : ''}`.slice(0, 70), M + 20, y)
+      y += 4.5
+    }
+    if (booths.length > shown.length) {
+      doc.setTextColor(...SLATE)
+      ensure(5)
+      text(`… e altri ${booths.length - shown.length}`, M, y)
+      y += 4.5
+    }
+    y += 2
+  }
+
   // --- App da installare ---
   const apps = planResult?.chargingApps?.apps || []
   const roaming = planResult?.chargingApps?.roaming || []

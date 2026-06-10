@@ -95,6 +95,24 @@ export default function ResultsPanel() {
         <div className="flex justify-between font-semibold border-t border-slate-200 mt-1 pt-1"><span>Totale</span><span className="text-brand-dark">€{option.cost.total.toFixed(2)}</span></div>
       </div>
 
+      {/* Caselli e barriere di riferimento lungo il percorso */}
+      {planResult.tollBooths?.length > 0 && (
+        <details className="rounded-lg border border-slate-200 p-3 text-xs">
+          <summary className="cursor-pointer font-semibold text-slate-500 uppercase tracking-wide text-[11px]">
+            🛣 Caselli e barriere sul percorso ({planResult.tollBooths.length})
+          </summary>
+          <ul className="mt-2 space-y-1">
+            {planResult.tollBooths.map((b, i) => (
+              <li key={i} className="flex items-baseline gap-2">
+                <span className="font-mono text-slate-400 w-16 shrink-0 text-right">{fmtDistance(b.alongKm, units)}</span>
+                <span className="text-slate-700">{b.name}</span>
+                {b.type === 'portale' && <span className="text-slate-400 text-[10px]">(portale free-flow)</span>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       {/* Avviso VIGNETTE da acquistare */}
       {planResult.toll?.vignettes?.length > 0 && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs space-y-2">

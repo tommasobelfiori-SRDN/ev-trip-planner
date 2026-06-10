@@ -266,7 +266,7 @@ function parseKw(str) {
   return Math.round(v)
 }
 
-async function overpassFetch(query) {
+export async function overpassFetch(query) {
   const endpoints = [env.OVERPASS_URL, 'https://overpass.kumi.systems/api/interpreter']
   let lastErr
   // Più tentativi con backoff: la copertura colonnine dev'essere COMPLETA (un buco = sosta mancante).
@@ -288,7 +288,7 @@ async function overpassFetch(query) {
   throw new Error('Stazioni non disponibili (OpenStreetMap/Overpass): ' + (lastErr?.message || 'errore'))
 }
 
-function hashStr(str) {
+export function hashStr(str) {
   let h = 0
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0
   return (h >>> 0).toString(36)

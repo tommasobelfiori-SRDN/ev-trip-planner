@@ -120,6 +120,12 @@ export default function Map() {
       })
     )
     map.getSource('stations').setData({ type: 'FeatureCollection', features: stationFeatures })
+
+    // caselli/barriere di pedaggio
+    const boothFeatures = (planResult?.tollBooths || []).map((b) =>
+      pt(b, { name: b.name, popup: `<b>🛣 ${esc(b.name)}</b><br/>${b.type === 'portale' ? 'portale free-flow' : 'casello'} · km ${b.alongKm}` })
+    )
+    map.getSource('booths').setData({ type: 'FeatureCollection', features: boothFeatures })
   }, [ready, planResult, selectedOptionId, poiFilter, poisData, origin, dest, stops])
 
   // Inquadra il percorso SOLO quando cambia la geometria della rotta (non a ogni modifica di sosta/POI).
@@ -200,6 +206,20 @@ function addLayers(map) {
     },
   })
 
+  // Caselli e barriere di pedaggio (riferimenti, es. "Barriera di Rondissone").
+  map.addSource('booths', { type: 'geojson', data: EMPTY_FC })
+  map.addLayer({
+    id: 'booths-circle',
+    type: 'circle',
+    source: 'booths',
+    paint: {
+      'circle-radius': 4.5,
+      'circle-color': '#334155',
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': '#fff',
+    },
+  })
+
   map.addSource('stops', { type: 'geojson', data: EMPTY_FC })
   map.addLayer({
     id: 'stops-circle',
@@ -215,7 +235,7 @@ function pt(o, props) {
 
 function bindPopups(map) {
   const popup = new maplibregl.Popup({ closeButton: false, offset: 12 })
-  for (const layer of ['stops-circle', 'pois-circle']) {
+  for (const layer of ['stops-circle', 'pois-circle', 'booths-circle']) {
     map.on('mouseenter', layer, () => (map.getCanvas().style.cursor = 'pointer'))
     map.on('mouseleave', layer, () => {
       map.getCanvas().style.cursor = ''
